@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
@@ -20,14 +20,8 @@ export async function seedAdmin(): Promise<void> {
     const code = (err as { code?: string }).code;
 
     if (code === 'auth/email-already-in-use') {
-      // Akun sudah ada — sign in sementara untuk dapat uid-nya
-      try {
-        const cred = await signInWithEmailAndPassword(auth, ADMIN_EMAIL, ADMIN_PASSWORD);
-        uid = cred.user.uid;
-      } catch {
-        // Jika gagal sign in pun, sudah ada — tidak masalah
-        return;
-      }
+      // Akun sudah ada — tidak perlu sign-in/seeding ulang
+      return;
     } else {
       // Error lain, abaikan (bisa jadi offline / rules belum aktif)
       console.warn('[seedAdmin] Gagal buat akun admin:', err);

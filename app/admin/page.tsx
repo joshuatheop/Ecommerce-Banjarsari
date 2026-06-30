@@ -15,41 +15,41 @@ import styles from './dashboard.module.css';
 
 // Label display untuk Channel_Click_Type enum
 const CHANNEL_LABELS: Record<ChannelClickType, string> = {
-  click_wa:          'Tombol WhatsApp',
+  click_wa: 'Tombol WhatsApp',
   click_marketplace: 'Tombol Marketplace',
-  salin_link:        'Salin Link',
-  view_item:         'Lihat Detail Item',
-  view_business:     'Lihat Profil Toko',
+  salin_link: 'Salin Link',
+  view_item: 'Lihat Detail Item',
+  view_business: 'Lihat Profil Toko',
 };
 
 // Warna bar per channel
 const CHANNEL_COLORS: Record<ChannelClickType, string> = {
-  click_wa:          'aqua',
+  click_wa: 'aqua',
   click_marketplace: 'green',
-  salin_link:        'accent',
-  view_item:         'muted',
-  view_business:     'muted',
+  salin_link: 'accent',
+  view_item: 'muted',
+  view_business: 'muted',
 };
 
 /* ---- FakeChart (SVG) — tetap statis untuk tren visual ---- */
 function FakeChart() {
   const w = 100, h = 40;
-  const dataA = [12,18,16,24,21,28,26,32,30,35,38,42,40,48,52,50,55,58,62,60,66,70,74,72,78,82,85,88,92,94];
-  const dataB = [8,11,9,14,13,18,17,21,20,24,26,28,27,33,36,35,38,41,44,43,47,50,53,51,56,58,61,63,66,68];
-  const max   = Math.max(...dataA);
+  const dataA = [12, 18, 16, 24, 21, 28, 26, 32, 30, 35, 38, 42, 40, 48, 52, 50, 55, 58, 62, 60, 66, 70, 74, 72, 78, 82, 85, 88, 92, 94];
+  const dataB = [8, 11, 9, 14, 13, 18, 17, 21, 20, 24, 26, 28, 27, 33, 36, 35, 38, 41, 44, 43, 47, 50, 53, 51, 56, 58, 61, 63, 66, 68];
+  const max = Math.max(...dataA);
   const toPath = (arr: number[]) =>
-    arr.map((v, i) => `${i === 0 ? 'M' : 'L'} ${(i/(arr.length-1))*w} ${h-(v/max)*h*0.92}`).join(' ');
+    arr.map((v, i) => `${i === 0 ? 'M' : 'L'} ${(i / (arr.length - 1)) * w} ${h - (v / max) * h * 0.92}`).join(' ');
   const toArea = (arr: number[]) => `${toPath(arr)} L ${w} ${h} L 0 ${h} Z`;
   return (
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: '100%', height: 200 }}>
       <defs>
         <linearGradient id="ga" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%"   stopColor="#05472B" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#05472B" stopOpacity="0"    />
+          <stop offset="0%" stopColor="#05472B" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#05472B" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="gb" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%"   stopColor="#00C0A3" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#00C0A3" stopOpacity="0"    />
+          <stop offset="0%" stopColor="#00C0A3" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="#00C0A3" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={toArea(dataA)} fill="url(#ga)" />
@@ -84,7 +84,7 @@ function StatCard({ label, value, delta, dir, loading }: {
    Main Page
    ============================================================ */
 export default function AdminDashboardPage() {
-  const [stats,   setStats]   = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [seedMsg, setSeedMsg] = useState('');
@@ -93,7 +93,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const unsub = subscribeAnalytics(
       (data) => { setStats(data); setLoading(false); },
-      ()     => { setLoading(false); },
+      () => { setLoading(false); },
     );
     return () => unsub();
   }, []);
@@ -116,8 +116,8 @@ export default function AdminDashboardPage() {
   // Hitung max untuk progress bar channel
   const channelEntries = stats
     ? (Object.entries(stats.channelCounts) as [ChannelClickType, number][])
-        .filter(([, v]) => v > 0)
-        .sort((a, b) => b[1] - a[1])
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1])
     : [];
   const maxChannel = channelEntries[0]?.[1] ?? 1;
 
@@ -127,7 +127,6 @@ export default function AdminDashboardPage() {
       {/* ===== HEADER ===== */}
       <div className={styles.header}>
         <div>
-          <div className={styles.eyebrow}>PBI-18, 19, 20 · Analytics Dashboard</div>
           <h1 className={styles.title}>Monitoring Dashboard</h1>
         </div>
         <div className={styles.headerActions}>
@@ -152,7 +151,7 @@ export default function AdminDashboardPage() {
       {/* ===== PBI-18: STAT CARDS ===== */}
       <div className={styles.statGrid}>
         <StatCard
-          label="Total Pengunjung (Total_Visitors)"
+          label="Total Pengunjung"
           value={stats?.totalVisitors.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="+18,3%" dir="up"
@@ -168,7 +167,7 @@ export default function AdminDashboardPage() {
           delta="+34,1%" dir="up"
         />
         <StatCard
-          label="Klik WA (click_wa)"
+          label="Klik WhatsApp"
           value={stats?.channelCounts.click_wa.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="+12,4%" dir="up"
@@ -187,7 +186,6 @@ export default function AdminDashboardPage() {
         <div className={styles.card}>
           <div className={styles.cardHead}>
             <div>
-              <div className={styles.eyebrow}>PBI-18 · Tren Pengunjung</div>
               <h4 className={styles.cardTitle}>30 hari terakhir</h4>
             </div>
             <div className={styles.legend}>
@@ -204,11 +202,10 @@ export default function AdminDashboardPage() {
 
         {/* PBI-20: Channel Analytics bar chart */}
         <div className={styles.card}>
-          <div className={styles.eyebrow}>PBI-20 · Channel Analytics (Channel_Click_Type)</div>
           <h4 className={styles.cardTitle}>Tombol paling sering diklik</h4>
           <div className={styles.barList}>
             {loading ? (
-              [1,2,3,4].map(i => <div key={i} className={`${styles.barRow} ${styles.skeleton}`} style={{ height: 36 }} />)
+              [1, 2, 3, 4].map(i => <div key={i} className={`${styles.barRow} ${styles.skeleton}`} style={{ height: 36 }} />)
             ) : channelEntries.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data. Klik &quot;Seed Data&quot; untuk mencoba.</p>
             ) : (
@@ -233,11 +230,10 @@ export default function AdminDashboardPage() {
       <div className={styles.topRow}>
         {/* Top_Clicked_Item */}
         <div className={styles.card}>
-          <div className={styles.eyebrow}>PBI-19 · Top_Clicked_Item</div>
           <h4 className={styles.cardTitle}>Item Paling Populer</h4>
           <div className={styles.itemList}>
             {loading ? (
-              [1,2,3,4,5,6].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
+              [1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
             ) : stats?.topItems.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data.</p>
             ) : (
@@ -246,7 +242,7 @@ export default function AdminDashboardPage() {
                   <span className={styles.rank}>#{i + 1}</span>
                   <div
                     className={styles.itemThumb}
-                    style={{ background: ['#AADCAB','#05472B','#00C0A3','#013020','#CDFF00','#AADCAB'][i % 6] }}
+                    style={{ background: ['#AADCAB', '#05472B', '#00C0A3', '#013020', '#CDFF00', '#AADCAB'][i % 6] }}
                   />
                   <div className={styles.itemMeta}>
                     <div className={styles.itemName}>{it.name}</div>
@@ -261,16 +257,15 @@ export default function AdminDashboardPage() {
 
         {/* Top_Business_Profile */}
         <div className={styles.card}>
-          <div className={styles.eyebrow}>PBI-19 · Top_Business_Profile</div>
           <h4 className={styles.cardTitle}>UMKM Terpopuler</h4>
           <div className={styles.itemList}>
             {loading ? (
-              [1,2,3,4,5].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
+              [1, 2, 3, 4, 5].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
             ) : stats?.topBusinesses.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data.</p>
             ) : (
               stats?.topBusinesses.map((b, i) => {
-                const emojis = ['🍲','🧺','☕','🎨','🔧'];
+                const emojis = ['🍲', '🧺', '☕', '🎨', '🔧'];
                 return (
                   <div key={b.name} className={`${styles.itemRow} ${i > 0 ? styles.itemRowBorder : ''}`}>
                     <span className={styles.rank}>#{i + 1}</span>
@@ -292,7 +287,6 @@ export default function AdminDashboardPage() {
       <div className={styles.tableWrap}>
         <div className={styles.tableHead}>
           <div>
-            <div className={styles.eyebrow}>PBI-18, 19, 20 · Event Log · Koleksi: analytics</div>
             <h4 className={styles.tableTitle}>Aktivitas Pengunjung Terkini</h4>
           </div>
           <span className={styles.liveChip}>● Live</span>
