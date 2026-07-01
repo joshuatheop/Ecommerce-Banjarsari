@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 import { getUserRole } from '@/lib/auth';
 import { seedAdmin } from '@/lib/seedAdmin';
@@ -13,11 +14,31 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, role, loading } = useAuth();
 
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error,    setError]    = useState('');
-  const [pending,  setPending]  = useState(false);
-  const [seeded,   setSeeded]   = useState(false);
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+  const [greeting, setGreeting] = useState('Selamat Datang');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const seededRef = useRef(false);
+
+  // Set greeting based on local time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const hr = new Date().getHours();
+      if (hr < 11) {
+        setGreeting('Selamat Pagi 🌅');
+      } else if (hr < 15) {
+        setGreeting('Selamat Siang ☀️');
+      } else if (hr < 18) {
+        setGreeting('Selamat Sore 🌤️');
+      } else {
+        setGreeting('Selamat Malam 🌙');
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Kalau sudah login, redirect sesuai role
   useEffect(() => {
@@ -29,11 +50,11 @@ export default function LoginPage() {
 
   // Seed admin sekali saja saat halaman dimuat
   useEffect(() => {
-    if (!seeded) {
-      setSeeded(true);
+    if (!seededRef.current) {
+      seededRef.current = true;
       seedAdmin().catch(() => {});
     }
-  }, [seeded]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +62,7 @@ export default function LoginPage() {
     setPending(true);
 
     try {
-      const cred    = await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
       const userRole = await getUserRole(cred.user.uid);
 
       if (userRole === 'admin') {
@@ -65,87 +86,174 @@ export default function LoginPage() {
     }
   };
 
-  // Jangan tampilkan form jika masih loading atau sudah login
+  // Tampilan loading screen awal
   if (loading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loader}>
-          <span className={styles.loaderDot} />
-          <span className={styles.loaderDot} />
-          <span className={styles.loaderDot} />
+      <div className={styles.loadingPage}>
+        <div className={styles.loaderContainer}>
+          <div className={styles.spinnerRing} />
+          <div className={styles.loaderText}>PALUGADA</div>
+          <span className={styles.loaderSub}>Katalog UMKM Banjarsari</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
-      {/* Background decorations */}
-      <div className={styles.bgGlow1} aria-hidden />
-      <div className={styles.bgGlow2} aria-hidden />
-      <div className={styles.bgGrid}  aria-hidden />
-
-      <div className={styles.card}>
-        {/* Logo */}
-        <div className={styles.logo}>
-          <span className={styles.logoDot} />
-          <span className={styles.logoText}>PALUGADA</span>
-        </div>
-        <p className={styles.logoSub}>Katalog UMKM Banjarsari</p>
-
-        <h1 className={styles.title}>Masuk ke Akun</h1>
-        <p className={styles.subtitle}>
-          Khusus admin &amp; pengelola platform.
-        </p>
-
-        <form id="login-form" onSubmit={handleSubmit} className={styles.form} noValidate>
-          <div className={styles.field}>
-            <label htmlFor="login-email" className={styles.label}>Email</label>
-            <input
-              id="login-email"
-              type="email"
-              className={`input ${styles.input}`}
-              placeholder="email@contoh.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+    <div className={styles.splitScreen}>
+      {/* Kolom Kiri: Visual Showcase (Tersembunyi di Mobile) */}
+      <div className={styles.visualCol}>
+        <div className={styles.visualOverlay} />
+        
+        {/* Glow orbs dekoratif */}
+        <div className={styles.visualGlow1} />
+        <div className={styles.visualGlow2} />
+        
+        <div className={styles.visualContent}>
+          {/* Badge Portal */}
+          <div className={styles.badge}>
+            <span className={styles.badgeDot} />
+            <span>PORTAL ADMINISTRATOR</span>
           </div>
+          
+          {/* Judul Utama */}
+          <h2 className={styles.visualTitle}>
+            Kelola UMKM <br />
+            <span className={styles.gradientText}>Banjarsari</span> Lebih Mudah
+          </h2>
+          <p className={styles.visualDescription}>
+            Gunakan platform PALUGADA untuk mengelola katalog produk unggulan desa, memantau analitik akses, dan memperluas jangkauan bisnis lokal.
+          </p>
 
-          <div className={styles.field}>
-            <label htmlFor="login-password" className={styles.label}>Password</label>
-            <input
-              id="login-password"
-              type="password"
-              className={`input ${styles.input}`}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && (
-            <div id="login-error" role="alert" className={styles.error}>
-              ⚠ {error}
+          {/* Stats Cards dengan Glassmorphism */}
+          <div className={styles.statsCardContainer}>
+            <div className={styles.glassStat}>
+              <div className={styles.statVal}>150+</div>
+              <div className={styles.statLabel}>UMKM Terdaftar</div>
             </div>
-          )}
+            <div className={styles.glassStat}>
+              <div className={styles.statVal}>10+</div>
+              <div className={styles.statLabel}>Kategori Produk</div>
+            </div>
+            <div className={styles.glassStat}>
+              <div className={styles.statVal}>Realtime</div>
+              <div className={styles.statLabel}>Statistik Kunjungan</div>
+            </div>
+          </div>
 
-          <button
-            id="login-submit"
-            type="submit"
-            className={`btn btn-primary ${styles.submitBtn}`}
-            disabled={pending}
-          >
-            {pending ? 'Memproses...' : 'Masuk →'}
-          </button>
-        </form>
+          {/* Footer visual */}
+          <div className={styles.visualFooter}>
+            <span>Banjarsari Digital Hub &copy; {new Date().getFullYear()}</span>
+          </div>
+        </div>
+      </div>
 
-        <p className={styles.backLink}>
-          <a href="/" className={styles.backAnchor}>← Kembali ke Beranda</a>
-        </p>
+      {/* Kolom Kanan: Form Login */}
+      <div className={styles.formCol}>
+        <div className={styles.formGlow} />
+        
+        <div className={styles.formContentWrapper}>
+          {/* Header Brand untuk Mobile */}
+          <div className={styles.brandHeader}>
+            <div className={styles.logo}>
+              <span className={styles.logoDot} />
+              <span className={styles.logoText}>PALUGADA</span>
+            </div>
+            <p className={styles.logoSub}>Katalog UMKM Banjarsari</p>
+          </div>
+
+          <div className={styles.formCard}>
+            <div className={styles.greetingSection}>
+              <h1 className={styles.greeting}>{greeting}</h1>
+              <p className={styles.subGreeting}>Silakan masuk ke akun pengelola Anda</p>
+            </div>
+
+            <form id="login-form" onSubmit={handleSubmit} className={styles.form} noValidate>
+              <div className={styles.field}>
+                <label htmlFor="login-email" className={styles.label}>Alamat Email</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  </span>
+                  <input
+                    id="login-email"
+                    type="email"
+                    className={styles.inputWithIcon}
+                    placeholder="nama@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="login-password" className={styles.label}>Kata Sandi</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </span>
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={styles.inputWithIcon}
+                    placeholder="Masukkan kata sandi"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={styles.passwordToggle}
+                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {error && (
+                <div id="login-error" role="alert" className={styles.error}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                id="login-submit"
+                type="submit"
+                className={styles.submitBtn}
+                disabled={pending}
+              >
+                {pending ? (
+                  <div className={styles.buttonSpinner}>
+                    <div className={styles.spinnerArc} />
+                    <span>Memproses...</span>
+                  </div>
+                ) : (
+                  <span className={styles.submitText}>
+                    Masuk ke Dashboard
+                    <svg className={styles.submitArrow} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                  </span>
+                )}
+              </button>
+            </form>
+
+            <p className={styles.backLink}>
+              <Link href="/" className={styles.backAnchor}>
+                <svg className={styles.backArrow} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Kembali ke Beranda
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
