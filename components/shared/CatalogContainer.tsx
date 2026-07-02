@@ -37,7 +37,7 @@ export default function CatalogContainer({
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all"); // 'all', 'lt50', '50-100', 'gt100'
   const [sortBy, setSortBy] = useState<string>("newest"); // 'newest', 'most_viewed'
-  const [hasMarketplace, setHasMarketplace] = useState<boolean>(false);
+  const [hasMarketplaceLink, setHasMarketplaceLink] = useState<boolean>(false);
   const [availability, setAvailability] = useState<string>("all"); // 'all', 'Setiap Hari', 'Janjian'
   const [isNegotiable, setIsNegotiable] = useState<boolean>(false);
   const [hasPortfolio, setHasPortfolio] = useState<boolean>(false);
@@ -92,8 +92,8 @@ export default function CatalogContainer({
         filteredProds = filteredProds.filter((item) => item.price > 100000);
       }
 
-      if (hasMarketplace) {
-        filteredProds = filteredProds.filter((item) => item.hasMarketplace);
+      if (hasMarketplaceLink) {
+        filteredProds = filteredProds.filter((item) => item.hasMarketplaceLink);
       }
       pool = filteredProds;
     } else {
@@ -123,7 +123,7 @@ export default function CatalogContainer({
     }
 
     return pool;
-  }, [type, q, selectedCategories, selectedAreas, priceRange, sortBy, hasMarketplace, availability, isNegotiable, hasPortfolio, products, services, businesses]);
+  }, [type, q, selectedCategories, selectedAreas, priceRange, sortBy, hasMarketplaceLink, availability, isNegotiable, hasPortfolio, products, services, businesses]);
 
   // Categories list for filtering based on selected type
   const currentCategories = useMemo(() => {
@@ -168,11 +168,11 @@ export default function CatalogContainer({
       });
     }
 
-    if (hasMarketplace && type === "product") {
+    if (hasMarketplaceLink && type === "product") {
       filters.push({
         id: "marketplace",
         label: "Ada Marketplace",
-        clear: () => setHasMarketplace(false),
+        clear: () => setHasMarketplaceLink(false),
       });
     }
 
@@ -201,14 +201,14 @@ export default function CatalogContainer({
     }
 
     return filters;
-  }, [q, selectedCategories, selectedAreas, priceRange, hasMarketplace, availability, isNegotiable, hasPortfolio, type, categories]);
+  }, [q, selectedCategories, selectedAreas, priceRange, hasMarketplaceLink, availability, isNegotiable, hasPortfolio, type, categories]);
 
   const clearAllFilters = () => {
     setQ("");
     setSelectedCategories([]);
     setSelectedAreas([]);
     setPriceRange("all");
-    setHasMarketplace(false);
+    setHasMarketplaceLink(false);
     setAvailability("all");
     setIsNegotiable(false);
     setHasPortfolio(false);
@@ -385,8 +385,8 @@ export default function CatalogContainer({
                 <label className="check-row">
                   <input
                     type="checkbox"
-                    checked={hasMarketplace}
-                    onChange={(e) => setHasMarketplace(e.target.checked)}
+                    checked={hasMarketplaceLink}
+                    onChange={(e) => setHasMarketplaceLink(e.target.checked)}
                   />
                   <span>Tersedia di Marketplace</span>
                 </label>

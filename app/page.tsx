@@ -7,11 +7,16 @@ import { Icons } from "@/components/shared/Icons";
 export const revalidate = 60; // Revalidate every minute
 
 export default async function Home() {
-  const [products, services, businesses] = await Promise.all([
+  const [rawProducts, rawServices, rawBusinesses] = await Promise.all([
     getProducts(),
     getServices(),
     getBusinesses(),
   ]);
+
+  // Guard: ensure arrays even if Firebase returns undefined unexpectedly
+  const products = rawProducts ?? [];
+  const services = rawServices ?? [];
+  const businesses = rawBusinesses ?? [];
 
   // Map business ID to Name for quick lookups
   const businessMap = new Map(businesses.map((b) => [b.id, b.name]));
