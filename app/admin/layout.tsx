@@ -35,6 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/produk',   icon: '⊞', label: 'Produk'     },
     { href: '/admin/toko',     icon: '⊟', label: 'Toko'       },
     { href: '/admin/kategori', icon: '⊜', label: 'Kategori'   },
+    { href: '/',               icon: '⌂', label: 'Laman User' },
   ];
 
   return (
@@ -57,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 className={styles.navItem}
-                id={`admin-nav-${item.label.toLowerCase()}`}
+                id={`admin-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <span className={styles.navIcon}>{item.icon}</span>
                 {item.label}
