@@ -1,228 +1,196 @@
-import Link from "next/link";
-import { getProducts, getServices, getBusinesses } from "@/lib/firestore/data-loader";
-import ProductCard from "@/components/shared/ProductCard";
-import ServiceCard from "@/components/shared/ServiceCard";
-import { Icons } from "@/components/shared/Icons";
+import styles from './page.module.css';
 
-export const revalidate = 60; // Revalidate every minute
+/* ============================================================
+   Homepage — PALUGADA Katalog UMKM Banjarsari
+   ============================================================ */
 
-export default async function Home() {
-  const [rawProducts, rawServices, rawBusinesses] = await Promise.all([
-    getProducts(),
-    getServices(),
-    getBusinesses(),
-  ]);
+const CATEGORIES = [
+  { icon: '🍚', name: 'Makanan & Minuman', count: 22 },
+  { icon: '🧺', name: 'Kerajinan Tangan',  count: 14 },
+  { icon: '🥨', name: 'Camilan',            count: 8  },
+  { icon: '🔧', name: 'Jasa Reparasi',      count: 6  },
+  { icon: '💇', name: 'Kecantikan',         count: 5  },
+  { icon: '🛠️', name: 'Konstruksi',         count: 3  },
+  { icon: '🧴', name: 'Rumah Tangga',       count: 7  },
+];
 
-  // Guard: ensure arrays even if Firebase returns undefined unexpectedly
-  const products = rawProducts ?? [];
-  const services = rawServices ?? [];
-  const businesses = rawBusinesses ?? [];
+const STATS = [
+  { value: '48',  label: 'UMKM Aktif'  },
+  { value: '120', label: 'Produk'      },
+  { value: '36',  label: 'Jasa'        },
+  { value: '4',   label: 'Dusun'       },
+];
 
-  // Map business ID to Name for quick lookups
-  const businessMap = new Map(businesses.map((b) => [b.id, b.name]));
-  const getBusinessName = (id: string) => businessMap.get(id) || "UMKM Banjarsari";
-
-  // Sort and slice top items (PBI-01 and PBI-02)
-  const topProducts = [...products]
-    .sort((a, b) => b.clickCount - a.clickCount)
-    .slice(0, 4);
-
-  const topServices = [...services]
-    .sort((a, b) => b.clickCount - a.clickCount)
-    .slice(0, 4);
-
-  // Quick categories
-  const quickCategories = [
-    { name: "Makanan & Minuman", icon: "🍚", slug: "makanan", type: "product" },
-    { name: "Kerajinan Tangan", icon: "🧺", slug: "kerajinan", type: "product" },
-    { name: "Camilan", icon: "🥨", slug: "camilan", type: "product" },
-    { name: "Jasa Reparasi", icon: "🔧", slug: "reparasi-elektronik", type: "service" },
-    { name: "Kecantikan", icon: "💇", slug: "kecantikan", type: "service" },
-  ];
-
+export default function HomePage() {
   return (
-    <main>
-      {/* HERO SECTION */}
-      <section style={{ paddingTop: 64, paddingBottom: 72, position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--white) 0%, var(--surface-2) 100%)" }}>
-        <div className="container">
-          <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 48, alignItems: "center" }} className="hero-grid">
-            <div>
-              <div className="label-eyebrow" style={{ marginBottom: 16 }}>
-                Katalog Warga Kelurahan Banjarsari
+    <div className={styles.root}>
+      {/* ===== NAVBAR ===== */}
+      <nav className={styles.nav}>
+        <div className={`container ${styles.navInner}`}>
+          <div className={styles.brand}>
+            <span className={styles.brandDot} />
+            PALUGADA
+          </div>
+          <div className={styles.navLinks}>
+            <a href="#katalog">Katalog</a>
+            <a href="#kategori">Kategori</a>
+            <a href="#tentang">Tentang</a>
+          </div>
+        </div>
+      </nav>
+
+      {/* ===== HERO ===== */}
+      <section className={styles.hero}>
+        <div className={styles.heroGlow} />
+        <div className={`container ${styles.heroContent}`}>
+          <span className={styles.heroBadge}>● Live · Banjarsari 2026</span>
+          <h1 className={styles.heroTitle}>
+            Belanja dari&nbsp;
+            <em className={styles.heroAccent}>tetangga.</em>
+            <br />
+            Bayar yang&nbsp;
+            <em className={styles.heroAccent}>kenal.</em>
+          </h1>
+          <p className={styles.heroSub}>
+            Satu katalog untuk semua produk &amp; jasa warga Banjarsari.
+            Dikurasi langsung oleh tim Karang Taruna.
+          </p>
+          <div className={styles.heroActions}>
+            <a href="#katalog" className="btn btn-primary btn-lg">
+              Jelajahi Produk
+            </a>
+            <a href="#kategori" className="btn btn-secondary btn-lg">
+              Lihat Kategori
+            </a>
+          </div>
+
+          {/* Stats */}
+          <div className={styles.statsRow}>
+            {STATS.map((s) => (
+              <div key={s.label} className={styles.stat}>
+                <span className={styles.statValue}>{s.value}</span>
+                <span className={styles.statLabel}>{s.label}</span>
               </div>
-              <h1 className="display" style={{
-                fontSize: "clamp(36px, 5vw, 56px)", margin: "0 0 20px", lineHeight: 1.1, letterSpacing: "-0.02em",
-                color: "var(--primary)"
-              }}>
-                Apa lu mau, <span style={{ color: "var(--primary)", borderBottom: "3px solid var(--secondary)" }}>tetangga ada.</span>
-              </h1>
-              <p style={{ fontSize: 18, color: "var(--dark)", opacity: 0.8, maxWidth: 540, lineHeight: 1.6, margin: "0 0 32px" }}>
-                Temukan {products.length + services.length} produk unggulan dan layanan jasa terpercaya dari {businesses.length} pelaku UMKM mandiri di lingkungan Kelurahan Banjarsari. Belanja dekat, hemat ongkir, majukan tetangga.
+            ))}
+          </div>
+        </div>
+
+        {/* Decorative grid pattern */}
+        <div className={styles.heroGrid} aria-hidden />
+      </section>
+
+      {/* ===== KATEGORI ===== */}
+      <section id="kategori" className={styles.section}>
+        <div className="container">
+          <div className={styles.sectionHead}>
+            <span className={styles.eyebrow}>Kategori Pilihan</span>
+            <h2 className={styles.sectionTitle}>Apa yang kamu cari?</h2>
+          </div>
+          <div className={styles.categoryScroll}>
+            {CATEGORIES.map((c) => (
+              <button key={c.name} className={styles.categoryCard}>
+                <span className={styles.categoryIcon}>{c.icon}</span>
+                <span className={styles.categoryName}>{c.name}</span>
+                <span className={styles.categoryCount}>{c.count} item</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PRODUK UNGGULAN ===== */}
+      <section id="katalog" className={`${styles.section} ${styles.sectionAlt}`}>
+        <div className="container">
+          <div className={styles.sectionHead}>
+            <div>
+              <span className={styles.eyebrow}>Produk UMKM</span>
+              <h2 className={styles.sectionTitle}>Yang Baru di Banjarsari</h2>
+            </div>
+            <a href="#" className={styles.seeAll}>Lihat semua →</a>
+          </div>
+          {/* Product grid — placeholder */}
+          <div className={styles.productGrid}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className={styles.productCard}>
+                <div className={styles.productThumb}>
+                  <span className={styles.productPlaceholder}>Foto Produk</span>
+                </div>
+                <div className={styles.productBody}>
+                  <span className={styles.productCat}>Makanan</span>
+                  <h3 className={styles.productName}>Produk UMKM {i + 1}</h3>
+                  <p className={styles.productOwner}>Toko Banjarsari</p>
+                  <span className={styles.productPrice}>Rp 25.000</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CTA BANNER ===== */}
+      <section className={styles.ctaSection}>
+        <div className="container">
+          <div className={styles.ctaBand}>
+            <div className={styles.ctaGlow} />
+            <div className={styles.ctaText}>
+              <span className={styles.ctaEyebrow}>Untuk Pemilik Usaha</span>
+              <h3 className={styles.ctaTitle}>
+                Punya usaha di Banjarsari?<br />Daftarkan gratis.
+              </h3>
+              <p className={styles.ctaSub}>
+                Tim Karang Taruna akan membantu fotokan produk, mengisi deskripsi,
+                dan menandai lokasi di peta.
               </p>
-              
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Link href="/katalog?type=product" className="btn btn-primary btn-lg">
-                  Jelajahi Produk UMKM <Icons.ArrowRight />
-                </Link>
-                <Link href="/katalog?type=service" className="btn btn-secondary btn-lg">
-                  Cari Layanan Jasa
-                </Link>
-              </div>
-
-              {/* STATS */}
-              <div style={{ display: "flex", gap: 32, marginTop: 48, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{businesses.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>UMKM Aktif</div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{products.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Produk Warga</div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{services.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Layanan Jasa</div>
-                </div>
-              </div>
             </div>
-
-            {/* Decorative Card Collage */}
-            <div style={{ position: "relative" }}>
-              <div style={{
-                aspectRatio: "4/5", borderRadius: "var(--radius-xl)", overflow: "hidden",
-                background: "var(--primary)", position: "relative",
-                boxShadow: "var(--shadow-lg)",
-                display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 32
-              }}>
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: `repeating-linear-gradient(135deg, transparent 0 28px, rgba(255,255,255,0.03) 28px 56px)`,
-                }}></div>
-                <div style={{
-                  position: "absolute", top: 24, left: 24, right: 24,
-                  fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--secondary)",
-                  letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", justifyContent: "space-between",
-                }}>
-                  <span>★ KARYA WARGA</span>
-                  <span>Banjarsari ’26</span>
-                </div>
-                
-                <h3 className="display" style={{ color: "var(--white)", fontSize: 28, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
-                  Menghubungkan UMKM, mempermudah transaksi antar tetangga.
-                </h3>
-              </div>
-
-              {/* Floating trending item card */}
-              <div style={{
-                position: "absolute", right: -16, bottom: 60, width: 260,
-                background: "var(--surface)", borderRadius: 14, padding: 18,
-                boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
-              }}>
-                <div className="label-eyebrow" style={{ marginBottom: 6, color: "var(--primary)" }}>Terpopuler Hari Ini</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>Batik Sari Asih</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--primary)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
-                    Kain Motif Tulis
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
-                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> 487 klik
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* QUICK CATEGORY SECTION */}
-      <section className="section-tight" style={{ borderBottom: "1px solid var(--line)", background: "var(--white)" }}>
-        <div className="container">
-          <div className="label-eyebrow" style={{ marginBottom: 16 }}>Kategori Pilihan</div>
-          <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
-            {quickCategories.map((c) => (
-              <Link 
-                key={c.name}
-                href={`/katalog?type=${c.type}&category=${c.slug}`}
-                style={{
-                  background: "var(--surface)", border: "1px solid var(--line)",
-                  borderRadius: 14, padding: "16px 20px",
-                  display: "flex", alignItems: "center", gap: 14,
-                  minWidth: 240, cursor: "pointer", textAlign: "left",
-                  transition: "all 0.2s"
-                }}
-                className="card"
+            <div className={styles.ctaAction}>
+              <a
+                href="https://wa.me/628123456789"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary btn-lg"
               >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, background: "var(--surface-2)",
-                  display: "grid", placeItems: "center", fontSize: 22,
-                }}>{c.icon}</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--primary)" }}>{c.name}</div>
-                  <div className="mono" style={{ fontSize: 11, color: "var(--primary)", opacity: 0.6, marginTop: 2 }}>
-                    Jelajahi &rarr;
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PBI-01: SECTION PRODUK UMKM */}
-      <section className="section" style={{ background: "var(--bg)" }}>
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <h2>Produk Unggulan UMKM</h2>
-              <p>Mulai dari kuliner lezat hingga kerajinan seni tradisional karya warga Banjarsari.</p>
+                📲 Daftar via WhatsApp
+              </a>
             </div>
-            <Link href="/katalog?type=product" className="more">
-              Lihat Semua Produk <Icons.ArrowRight />
-            </Link>
-          </div>
-
-          <div className="grid grid-products">
-            {topProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                businessName={getBusinessName(product.businessId)} 
-              />
-            ))}
           </div>
         </div>
       </section>
 
-      {/* PBI-02: SECTION LAYANAN JASA */}
-      <section className="section" style={{ background: "var(--white)", borderTop: "1px solid var(--line)" }}>
+      {/* ===== FOOTER ===== */}
+      <footer className={styles.footer}>
         <div className="container">
-          <div className="section-head">
+          <div className={styles.footerGrid}>
             <div>
-              <h2>Layanan Jasa Warga</h2>
-              <p>Temukan penyedia jasa terpercaya untuk membantu kebutuhan teknis dan harian Anda.</p>
+              <div className={styles.footerBrand}>
+                <span className={styles.brandDot} />
+                PALUGADA
+              </div>
+              <p className={styles.footerDesc}>
+                Katalog UMKM &amp; Jasa Warga<br />Kelurahan Banjarsari
+              </p>
             </div>
-            <Link href="/katalog?type=service" className="more">
-              Lihat Semua Layanan Jasa <Icons.ArrowRight />
-            </Link>
+            <div>
+              <h5 className={styles.footerHeading}>Tautan</h5>
+              <ul className={styles.footerLinks}>
+                <li><a href="#katalog">Katalog</a></li>
+                <li><a href="#kategori">Kategori</a></li>
+                <li><a href="#tentang">Tentang</a></li>
+              </ul>
+            </div>
+            <div>
+              <h5 className={styles.footerHeading}>Kontak</h5>
+              <ul className={styles.footerLinks}>
+                <li>Karang Taruna Banjarsari</li>
+                <li>Kec. Banjarsari, Kab. Ciamis</li>
+              </ul>
+            </div>
           </div>
-
-          <div className="grid grid-products">
-            {topServices.map((service) => (
-              <ServiceCard 
-                key={service.id} 
-                service={service} 
-                businessName={getBusinessName(service.businessId)} 
-              />
-            ))}
+          <div className={styles.footerBottom}>
+            <span>© 2026 PALUGADA · Banjarsari</span>
+            <span>Dibuat dengan ❤ oleh Karang Taruna</span>
           </div>
         </div>
-      </section>
-      
-      <style>{`
-        @media (max-width: 880px) {
-          .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-        }
-      `}</style>
-    </main>
+      </footer>
+    </div>
   );
 }
