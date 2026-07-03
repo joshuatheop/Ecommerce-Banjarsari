@@ -250,73 +250,20 @@ kategori/{kategoriId}
 └── icon          : string
 ```
 
-### Koleksi: `users`
-```
-users/{uid}
-├── email           : string
-├── role            : 'admin' | 'pelanggan'
-├── displayName     : string (opsional)
-├── photoURL        : string (opsional)
-├── alamat          : string (opsional)
-├── kewarganegaraan : string (opsional)
-├── noTelepon       : string (opsional)
-├── createdAt       : Timestamp
-└── updatedAt       : Timestamp
-```
-
 ---
 
 ## 📦 Tech Stack Log
 
 > Setiap kali menambahkan framework, library, atau modul baru, **WAJIB** mencatatnya di sini.
 
-| Tanggal    | Paket / Library             | Versi    | Alasan Penambahan                         |
-|------------|-----------------------------|----------|-------------------------------------------|
-| 2026-06-30 | `next`                      | 16.2.9   | Framework utama (App Router)              |
-| 2026-06-30 | `react` + `react-dom`       | 19.2.4   | UI library                                |
-| 2026-06-30 | `typescript`                | ^5       | Type safety                               |
-| 2026-06-30 | `firebase`                  | ^12.15.0 | Backend: Firestore, Auth, Storage         |
-| 2026-06-30 | `eslint` + `eslint-config-next` | ^9 / 16.2.9 | Linting                          |
-| 2026-06-30 | `Plus Jakarta Sans` (font)  | -        | Font body (via next/font/google)          |
-| 2026-06-30 | `JetBrains Mono` (font)     | -        | Font heading (via next/font/google)       |
-| 2026-07-02 | Google Auth & Register      | -        | Integrasi Google Sign-in & Register Page  |
-
----
-
-## 🗂️ File Baru yang Sudah Dibuat
-
-| File | Keterangan |
-|---|---|
-| `app/globals.css` | Design system dengan color palette PALUGADA (hijau) |
-| `app/layout.tsx` | Root layout: font JetBrains Mono + Plus Jakarta Sans + AuthProvider |
-| `app/page.tsx` + `page.module.css` | Homepage publik |
-| `app/login/page.tsx` + `login.module.css` | Halaman login (path: `/login`) |
-| `app/register/page.tsx` + `register.module.css` | Halaman registrasi (path: `/register`) |
-| `app/profile/page.tsx` + `profile.module.css` | Halaman profil pengguna (path: `/profile`) |
-| `app/admin/layout.tsx` + `admin.module.css` | Admin layout dengan sidebar + auth guard |
-| `app/admin/page.tsx` + `dashboard.module.css` | Admin dashboard (kosong) |
-| `context/AuthContext.tsx` | React Context: user state + role dari Firestore |
-| `lib/auth.ts` | Helper: `getUserRole()`, `createUserDocument()`, `updateUserDocument()`, `getUserDocument()` |
-| `lib/seedAdmin.ts` | Seeder: buat akun admin `admin2@banjarsari.com` |
-
-## 🔐 Firestore Rules — WAJIB diset di Firebase Console
-
-Sebelum fitur berjalan sempurna di production, set Firestore Rules:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Koleksi users: hanya bisa dibaca oleh user sendiri
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-    // Koleksi lain: tambahkan sesuai kebutuhan
-  }
-}
-```
-
-> ⚠️ Saat development, boleh pakai test mode. Tapi sebelum production, rules HARUS diset!
+| Tanggal    | Paket / Library             | Versi   | Alasan Penambahan                         |
+|------------|-----------------------------|---------|-------------------------------------------|
+| 2026-06-30 | `next`                      | latest  | Framework utama (App Router)              |
+| 2026-06-30 | `react` + `react-dom`       | latest  | UI library                                |
+| 2026-06-30 | `typescript`                | latest  | Type safety                               |
+| 2026-06-30 | `firebase`                  | latest  | Backend: Firestore, Auth, Storage         |
+| 2026-06-30 | `Plus Jakarta Sans` (font)  | -       | Font body (via Google Fonts)              |
+| 2026-06-30 | `JetBrains Mono` (font)     | -       | Font heading (via Google Fonts)           |
 
 ---
 
