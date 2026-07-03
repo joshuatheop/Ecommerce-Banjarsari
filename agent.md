@@ -250,6 +250,20 @@ kategori/{kategoriId}
 └── icon          : string
 ```
 
+### Koleksi: `users`
+```
+users/{uid}
+├── email           : string
+├── role            : 'admin' | 'pelanggan'
+├── displayName     : string (opsional)
+├── photoURL        : string (opsional)
+├── alamat          : string (opsional)
+├── kewarganegaraan : string (opsional)
+├── noTelepon       : string (opsional)
+├── createdAt       : Timestamp
+└── updatedAt       : Timestamp
+```
+
 ---
 
 ## 📦 Tech Stack Log
@@ -265,6 +279,7 @@ kategori/{kategoriId}
 | 2026-06-30 | `eslint` + `eslint-config-next` | ^9 / 16.2.9 | Linting                          |
 | 2026-06-30 | `Plus Jakarta Sans` (font)  | -        | Font body (via next/font/google)          |
 | 2026-06-30 | `JetBrains Mono` (font)     | -        | Font heading (via next/font/google)       |
+| 2026-07-02 | Google Auth & Register      | -        | Integrasi Google Sign-in & Register Page  |
 
 ---
 
@@ -276,10 +291,12 @@ kategori/{kategoriId}
 | `app/layout.tsx` | Root layout: font JetBrains Mono + Plus Jakarta Sans + AuthProvider |
 | `app/page.tsx` + `page.module.css` | Homepage publik |
 | `app/login/page.tsx` + `login.module.css` | Halaman login (path: `/login`) |
+| `app/register/page.tsx` + `register.module.css` | Halaman registrasi (path: `/register`) |
+| `app/profile/page.tsx` + `profile.module.css` | Halaman profil pengguna (path: `/profile`) |
 | `app/admin/layout.tsx` + `admin.module.css` | Admin layout dengan sidebar + auth guard |
 | `app/admin/page.tsx` + `dashboard.module.css` | Admin dashboard (kosong) |
 | `context/AuthContext.tsx` | React Context: user state + role dari Firestore |
-| `lib/auth.ts` | Helper: `getUserRole()`, `createUserDocument()` |
+| `lib/auth.ts` | Helper: `getUserRole()`, `createUserDocument()`, `updateUserDocument()`, `getUserDocument()` |
 | `lib/seedAdmin.ts` | Seeder: buat akun admin `admin2@banjarsari.com` |
 
 ## 🔐 Firestore Rules — WAJIB diset di Firebase Console

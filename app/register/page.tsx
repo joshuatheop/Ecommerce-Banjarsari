@@ -1,122 +1,67 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
-import { getUserRole, createUserDocument } from '@/lib/auth';
-import { seedAdmin } from '@/lib/seedAdmin';
+import { createUserDocument } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
-import styles from './login.module.css';
+import styles from './register.module.css';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const { user, role, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const [greeting, setGreeting] = useState('Selamat Datang');
-  const [showPassword, setShowPassword] = useState(false);
 
-  const seededRef = useRef(false);
-
-  // Set greeting based on local time
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const hr = new Date().getHours();
-      if (hr < 11) {
-        setGreeting('Selamat Pagi 🌅');
-      } else if (hr < 15) {
-        setGreeting('Selamat Siang ☀️');
-      } else if (hr < 18) {
-        setGreeting('Selamat Sore 🌤️');
-      } else {
-        setGreeting('Selamat Malam 🌙');
-      }
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Kalau sudah login, redirect sesuai role
+  // Jika sudah login, redirect ke beranda
   useEffect(() => {
     if (!loading && user) {
-      if (role === 'admin') router.replace('/admin');
-      else router.replace('/');
+      router.replace('/');
     }
-  }, [user, role, loading, router]);
-
-  // Seed admin sekali saja saat halaman dimuat
-  useEffect(() => {
-    if (!seededRef.current) {
-      seededRef.current = true;
-      seedAdmin().catch(() => {});
-    }
-  }, []);
+  }, [user, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!email || !password || !confirmPassword) {
+      setError('Harap lengkapi semua kolom.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Kata sandi dan konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Kata sandi harus minimal 6 karakter.');
+      return;
+    }
+
     setPending(true);
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const userRole = await getUserRole(cred.user.uid);
-
-      if (userRole === 'admin') {
-        router.replace('/admin');
-      } else {
-        router.replace('/');
-      }
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // Buat dokumen user di Firestore dengan role 'pelanggan'
+      await createUserDocument(cred.user.uid, email, 'pelanggan');
+      router.replace('/');
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
-      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-        setError('Email atau password salah.');
+      if (code === 'auth/email-already-in-use') {
+        setError('Email ini sudah terdaftar. Silakan masuk.');
       } else if (code === 'auth/invalid-email') {
         setError('Format email tidak valid.');
-      } else if (code === 'auth/too-many-requests') {
-        setError('Terlalu banyak percobaan. Coba lagi nanti.');
+      } else if (code === 'auth/weak-password') {
+        setError('Kata sandi terlalu lemah.');
       } else {
-        setError('Terjadi kesalahan. Silakan coba lagi.');
-      }
-    } finally {
-      setPending(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setPending(true);
-
-    try {
-      const provider = new GoogleAuthProvider();
-      // Selalu tampilkan pilihan akun Google
-      provider.setCustomParameters({ prompt: 'select_account' });
-      
-      const cred = await signInWithPopup(auth, provider);
-      const user = cred.user;
-
-      if (user.email) {
-        // Buat/update user document dengan role default 'pelanggan'
-        await createUserDocument(user.uid, user.email, 'pelanggan', user.displayName, user.photoURL);
-      }
-
-      const userRole = await getUserRole(user.uid);
-      if (userRole === 'admin') {
-        router.replace('/admin');
-      } else {
-        router.replace('/');
-      }
-    } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
-      if (code === 'auth/popup-closed-by-user') {
-        setError('Proses masuk dengan Google dibatalkan.');
-      } else if (code === 'auth/blocked-by-popup-toggler') {
-        setError('Popup diblokir oleh browser. Harap izinkan popup untuk situs ini.');
-      } else {
-        setError('Gagal masuk dengan Google. Silakan coba lagi.');
+        setError('Gagal mendaftar. Silakan coba lagi.');
         console.error(err);
       }
     } finally {
@@ -124,7 +69,36 @@ export default function LoginPage() {
     }
   };
 
-  // Tampilan loading screen awal
+  const handleGoogleSignUp = async () => {
+    setError('');
+    setPending(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      
+      const cred = await signInWithPopup(auth, provider);
+      const user = cred.user;
+
+      if (user.email) {
+        await createUserDocument(user.uid, user.email, 'pelanggan', user.displayName, user.photoURL);
+      }
+      router.replace('/');
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/popup-closed-by-user') {
+        setError('Proses pendaftaran dengan Google dibatalkan.');
+      } else if (code === 'auth/blocked-by-popup-toggler') {
+        setError('Popup diblokir oleh browser. Harap izinkan popup untuk situs ini.');
+      } else {
+        setError('Gagal mendaftar dengan Google. Silakan coba lagi.');
+        console.error(err);
+      }
+    } finally {
+      setPending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingPage}>
@@ -139,54 +113,49 @@ export default function LoginPage() {
 
   return (
     <div className={styles.splitScreen}>
-      {/* Kolom Kiri: Visual Showcase (Tersembunyi di Mobile) */}
+      {/* Kolom Kiri: Visual Showcase */}
       <div className={styles.visualCol}>
         <div className={styles.visualOverlay} />
         
-        {/* Glow orbs dekoratif */}
         <div className={styles.visualGlow1} />
         <div className={styles.visualGlow2} />
         
         <div className={styles.visualContent}>
-          {/* Badge Portal */}
           <div className={styles.badge}>
             <span className={styles.badgeDot} />
             <span>PORTAL PALUGADA</span>
           </div>
           
-          {/* Judul Utama */}
           <h2 className={styles.visualTitle}>
-            Jelajahi UMKM <br />
-            <span className={styles.gradientText}>Banjarsari</span> Lebih Praktis
+            Bergabung dengan <br />
+            <span className={styles.gradientText}>PALUGADA</span> Sekarang
           </h2>
           <p className={styles.visualDescription}>
-            Temukan produk unggulan desa, akses layanan jasa terbaik warga, atau masuk ke dashboard untuk mengelola usaha Anda sendiri secara digital.
+            Daftarkan diri Anda untuk menjelajahi katalog produk unggulan secara lengkap, berinteraksi dengan pelaku UMKM, dan mendukung pertumbuhan ekonomi lokal Banjarsari.
           </p>
 
-          {/* Stats Cards dengan Glassmorphism */}
           <div className={styles.statsCardContainer}>
             <div className={styles.glassStat}>
-              <div className={styles.statVal}>150+</div>
-              <div className={styles.statLabel}>UMKM Terdaftar</div>
+              <div className={styles.statVal}>Gratis</div>
+              <div className={styles.statLabel}>Tanpa Biaya Pendaftaran</div>
             </div>
             <div className={styles.glassStat}>
-              <div className={styles.statVal}>10+</div>
-              <div className={styles.statLabel}>Kategori Produk</div>
+              <div className={styles.statVal}>Mudah</div>
+              <div className={styles.statLabel}>Proses Cepat & Praktis</div>
             </div>
             <div className={styles.glassStat}>
-              <div className={styles.statVal}>Realtime</div>
-              <div className={styles.statLabel}>Statistik Kunjungan</div>
+              <div className={styles.statVal}>Lokal</div>
+              <div className={styles.statLabel}>Dukung UMKM Tetangga</div>
             </div>
           </div>
 
-          {/* Footer visual */}
           <div className={styles.visualFooter}>
             <span>Banjarsari Digital Hub &copy; {new Date().getFullYear()}</span>
           </div>
         </div>
       </div>
 
-      {/* Kolom Kanan: Form Login */}
+      {/* Kolom Kanan: Form Register */}
       <div className={styles.formCol}>
         <div className={styles.formGlow} />
         
@@ -202,19 +171,19 @@ export default function LoginPage() {
 
           <div className={styles.formCard}>
             <div className={styles.greetingSection}>
-              <h1 className={styles.greeting}>{greeting}</h1>
-              <p className={styles.subGreeting}>Silakan masuk ke akun Anda</p>
+              <h1 className={styles.greeting}>Daftar Akun</h1>
+              <p className={styles.subGreeting}>Silakan lengkapi formulir pendaftaran</p>
             </div>
 
-            <form id="login-form" onSubmit={handleSubmit} className={styles.form} noValidate>
+            <form id="register-form" onSubmit={handleSubmit} className={styles.form} noValidate>
               <div className={styles.field}>
-                <label htmlFor="login-email" className={styles.label}>Alamat Email</label>
+                <label htmlFor="register-email" className={styles.label}>Alamat Email</label>
                 <div className={styles.inputWrapper}>
                   <span className={styles.inputIcon}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                   </span>
                   <input
-                    id="login-email"
+                    id="register-email"
                     type="email"
                     className={styles.inputWithIcon}
                     placeholder="nama@email.com"
@@ -227,45 +196,52 @@ export default function LoginPage() {
               </div>
 
               <div className={styles.field}>
-                <label htmlFor="login-password" className={styles.label}>Kata Sandi</label>
+                <label htmlFor="register-password" className={styles.label}>Kata Sandi</label>
                 <div className={styles.inputWrapper}>
                   <span className={styles.inputIcon}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                   </span>
                   <input
-                    id="login-password"
-                    type={showPassword ? 'text' : 'password'}
+                    id="register-password"
+                    type="password"
                     className={styles.inputWithIcon}
-                    placeholder="Masukkan kata sandi"
+                    placeholder="Minimal 6 karakter"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={styles.passwordToggle}
-                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                  >
-                    {showPassword ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    )}
-                  </button>
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="register-confirm-password" className={styles.label}>Konfirmasi Kata Sandi</label>
+                <div className={styles.inputWrapper}>
+                  <span className={styles.inputIcon}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </span>
+                  <input
+                    id="register-confirm-password"
+                    type="password"
+                    className={styles.inputWithIcon}
+                    placeholder="Masukkan ulang kata sandi"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                  />
                 </div>
               </div>
 
               {error && (
-                <div id="login-error" role="alert" className={styles.error}>
+                <div id="register-error" role="alert" className={styles.error}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   <span>{error}</span>
                 </div>
               )}
 
               <button
-                id="login-submit"
+                id="register-submit"
                 type="submit"
                 className={styles.submitBtn}
                 disabled={pending}
@@ -273,11 +249,11 @@ export default function LoginPage() {
                 {pending ? (
                   <div className={styles.buttonSpinner}>
                     <div className={styles.spinnerArc} />
-                    <span>Memproses...</span>
+                    <span>Mendaftar...</span>
                   </div>
                 ) : (
                   <span className={styles.submitText}>
-                    Masuk
+                    Daftar Akun Baru
                     <svg className={styles.submitArrow} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                   </span>
                 )}
@@ -287,10 +263,10 @@ export default function LoginPage() {
             <div className={styles.divider}>atau</div>
 
             <button
-              id="login-google"
+              id="register-google"
               type="button"
               className={styles.googleBtn}
-              onClick={handleGoogleSignIn}
+              onClick={handleGoogleSignUp}
               disabled={pending}
             >
               <span className={styles.googleIcon}>
@@ -301,13 +277,13 @@ export default function LoginPage() {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
               </span>
-              <span>Masuk dengan Google</span>
+              <span>Daftar dengan Google</span>
             </button>
 
-            <p className={styles.registerPrompt}>
-              Belum punya akun?
-              <Link href="/register" className={styles.registerLink}>
-                Daftar Sekarang
+            <p className={styles.loginPrompt}>
+              Sudah punya akun?
+              <Link href="/login" className={styles.loginLink}>
+                Masuk Sekarang
               </Link>
             </p>
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   PALUGADA Login Screen Stylesheet
+   PALUGADA Register Screen Stylesheet
    ============================================================ */
 
 /* Full Screen Loader */
@@ -288,7 +288,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Login Form Card */
+/* Register Form Card */
 .formCard {
   background: var(--color-white);
   border-radius: 24px;
@@ -378,23 +378,6 @@
 
 .inputWithIcon:focus + .inputIcon,
 .inputWrapper:focus-within .inputIcon {
-  color: var(--color-primary);
-}
-
-/* Password eye toggle button */
-.passwordToggle {
-  position: absolute;
-  right: 16px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.passwordToggle:hover {
   color: var(--color-primary);
 }
 
@@ -571,15 +554,15 @@
   justify-content: center;
 }
 
-/* Register prompt */
-.registerPrompt {
+/* Login prompt */
+.loginPrompt {
   text-align: center;
   font-size: 13.5px;
   color: var(--text-muted);
   margin-top: 24px;
 }
 
-.registerLink {
+.loginLink {
   color: var(--color-primary);
   font-weight: 700;
   text-decoration: none;
@@ -587,11 +570,10 @@
   transition: color 0.2s ease;
 }
 
-.registerLink:hover {
+.loginLink:hover {
   color: var(--color-dark);
   text-decoration: underline;
 }
-
 
 
 /* ============================================================
