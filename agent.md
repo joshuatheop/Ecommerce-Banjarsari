@@ -112,7 +112,7 @@ body, p, span, input, button {
 │   └── firestore/              # Helper functions Firestore
 ├── public/                     # Asset statis
 └── styles/
-    └── globals.css             # CSS global + design tokens
+    └── globalstheo.css         # CSS global + design tokens
 ```
 
 ---
@@ -287,7 +287,7 @@ users/{uid}
 
 | File | Keterangan |
 |---|---|
-| `app/globals.css` | Design system dengan color palette PALUGADA (hijau) |
+| `app/globalstheo.css` | Design system dengan color palette PALUGADA (hijau) |
 | `app/layout.tsx` | Root layout: font JetBrains Mono + Plus Jakarta Sans + AuthProvider |
 | `app/page.tsx` + `page.module.css` | Homepage publik |
 | `app/login/page.tsx` + `login.module.css` | Halaman login (path: `/login`) |
