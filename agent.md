@@ -92,6 +92,9 @@ body, p, span, input, button {
 /
 ├── app/                        # App Router Next.js
 │   ├── layout.tsx              # Root layout (font, metadata global)
+│   ├── globals.css             # Entry file CSS global (mengimpor globalstheo & globalsdavy)
+│   ├── globalstheo.css         # CSS global Theo (design tokens, dll)
+│   ├── globalsdavy.css         # CSS global Davy (placeholder)
 │   ├── page.tsx                # Halaman utama / Home
 │   ├── katalog/
 │   │   └── page.tsx            # Halaman katalog produk
@@ -110,9 +113,7 @@ body, p, span, input, button {
 ├── lib/
 │   ├── firebase.ts             # Konfigurasi Firebase
 │   └── firestore/              # Helper functions Firestore
-├── public/                     # Asset statis
-└── styles/
-    └── globalstheo.css         # CSS global + design tokens
+└── public/                     # Asset statis
 ```
 
 ---
@@ -287,7 +288,9 @@ users/{uid}
 
 | File | Keterangan |
 |---|---|
-| `app/globalstheo.css` | Design system dengan color palette PALUGADA (hijau) |
+| `app/globals.css` | Entry CSS global yang mengimpor berkas stylesheet developer (`globalstheo.css`, `globalsdavy.css`) |
+| `app/globalstheo.css` | Design system dengan color palette PALUGADA (hijau) oleh Theo |
+| `app/globalsdavy.css` | Placeholder design system oleh Davy |
 | `app/layout.tsx` | Root layout: font JetBrains Mono + Plus Jakarta Sans + AuthProvider |
 | `app/page.tsx` + `page.module.css` | Homepage publik |
 | `app/login/page.tsx` + `login.module.css` | Halaman login (path: `/login`) |

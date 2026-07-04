@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
-import './globalstheo.css';
+import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 
 const jetbrainsMono = JetBrains_Mono({
