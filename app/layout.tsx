@@ -1,20 +1,33 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-heading',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-body',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: "PALUGADA — Katalog UMKM & Jasa Banjarsari",
-  description: "Platform e-commerce & katalog digital untuk UMKM dan pelaku jasa di Kelurahan Banjarsari.",
+  title: 'PALUGADA — Katalog UMKM & Jasa Banjarsari',
+  description:
+    'Platform katalog digital untuk UMKM dan pelaku jasa di Kelurahan Banjarsari. Temukan produk lokal, jasa warga, dan dukung ekonomi tetangga.',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id">
+    <html lang="id" className={`${jetbrainsMono.variable} ${plusJakartaSans.variable}`}>
       <body>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
