@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import "./globalsdavy.css";
-import Navbar from "@/components/shared/Navbar";
-import Footer from "@/components/shared/Footer";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "PALUGADA — Katalog UMKM & Jasa Banjarsari",
@@ -16,11 +14,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body>
-        <div className="app-root">
-          <Navbar />
-          {children}
-          <Footer />
-        </div>
+        {children}
       </body>
     </html>
   );
