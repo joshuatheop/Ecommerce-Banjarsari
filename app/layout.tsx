@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${jetbrainsMono.variable} ${plusJakartaSans.variable}`}>
-      <body>
+      <body className="theo-theme">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

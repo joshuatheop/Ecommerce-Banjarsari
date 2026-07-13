@@ -168,37 +168,6 @@ Berikut adalah daftar halaman yang sudah ada prototipenya di folder `screens/`:
 - Semua warna harus melalui CSS variable yang sudah didefinisikan
 - Jaga konsistensi spacing menggunakan kelipatan `8px` (8, 16, 24, 32, 48, 64...)
 
-### 1a. 🗂️ Aturan Globals CSS — Wajib Cek Folder Sebelum Edit
-
-> ⚠️ **WAJIB DILAKUKAN** sebelum menyentuh file globals manapun.
-
-Proyek ini memiliki **dua tema terpisah** yang masing-masing punya file globals sendiri:
-
-| Folder Route Group | File Globals yang Boleh Diubah | File yang DILARANG Diubah |
-|--------------------|-------------------------------|---------------------------|
-| `app/(davy)/`      | `app/globalsdavy.css`         | `app/globalstheo.css`, `app/globals.css` |
-| `app/(theo)/`      | `app/globalstheo.css`         | `app/globalsdavy.css`, `app/globals.css` |
-
-**Prosedur wajib sebelum mengubah globals:**
-
-```
-1. Identifikasi folder dari file yang sedang dikerjakan:
-   - Apakah path file mengandung `(davy)/`  → hanya boleh ubah globalsdavy.css
-   - Apakah path file mengandung `(theo)/`  → hanya boleh ubah globalstheo.css
-   - File di luar kedua folder di atas       → tidak boleh ubah globals sama sekali tanpa konfirmasi
-
-2. DILARANG mengubah globals milik tema lain,
-   meskipun class name atau variable-nya sama.
-
-3. Jika perubahan diperlukan di kedua tema, lakukan secara eksplisit
-   dan informasikan kepada user bahwa kedua file akan diubah.
-```
-
-**Contoh:**
-- Sedang mengerjakan `app/(davy)/katalog/page.tsx` dan perlu mengubah `.btn` → edit `globalsdavy.css` ✅
-- Sedang mengerjakan `app/(theo)/login/page.tsx` dan perlu mengubah `.input` → edit `globalstheo.css` ✅
-- Sedang mengerjakan `app/(davy)/page.tsx` lalu mengubah `globalstheo.css` → ❌ DILARANG
-
 ### 2. Komponen
 - Semua komponen ditulis dalam **TypeScript** (`.tsx`)
 - Gunakan **functional component** dengan arrow function
@@ -382,9 +351,6 @@ service cloud.firestore {
 - ❌ Jangan hardcode nilai konfigurasi Firebase di kode sumber
 - ❌ Jangan buat koleksi Firestore baru tanpa konfirmasi user
 - ❌ Jangan ubah font yang sudah ditetapkan
-- ❌ **Jangan ubah `globalsdavy.css` jika file yang dikerjakan ada di folder `(theo)/`**
-- ❌ **Jangan ubah `globalstheo.css` jika file yang dikerjakan ada di folder `(davy)/`**
-- ❌ Jangan ubah `globals.css` (root) sebagai pengganti globals tema
 
 ## ✅ Keharusan (MUST DO)
 
@@ -394,10 +360,8 @@ service cloud.firestore {
 - ✅ Selalu referensikan UI prototype di `screens/` saat membangun halaman
 - ✅ Selalu gunakan TypeScript dengan type yang proper
 - ✅ Selalu simpan credential Firebase di `.env.local`
-- ✅ **Selalu cek path folder (`(davy)/` atau `(theo)/`) sebelum menyentuh file globals CSS**
-- ✅ **Hanya ubah globals CSS yang sesuai dengan folder tema yang sedang dikerjakan**
 
 ---
 
-*Dokumen ini diperbarui terakhir: 2026-07-13*  
+*Dokumen ini diperbarui terakhir: 2026-06-30*  
 *Jika ada perubahan requirement atau design, update dokumen ini juga.*

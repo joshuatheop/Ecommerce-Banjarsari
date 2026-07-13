@@ -59,7 +59,7 @@ export default async function Home() {
               <p style={{ fontSize: 18, color: "var(--dark)", opacity: 0.8, maxWidth: 540, lineHeight: 1.6, margin: "0 0 32px" }}>
                 Temukan {products.length + services.length} produk unggulan dan layanan jasa terpercaya dari {businesses.length} pelaku UMKM mandiri di lingkungan Kelurahan Banjarsari. Belanja dekat, hemat ongkir, majukan tetangga.
               </p>
-              
+
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Link href="/katalog?type=product" className="btn btn-primary btn-lg">
                   Jelajahi Produk UMKM <Icons.ArrowRight />
@@ -106,15 +106,15 @@ export default async function Home() {
                   <span>★ KARYA WARGA</span>
                   <span>Banjarsari ’26</span>
                 </div>
-                
-                <h3 className="display" style={{ color: "var(--white)", fontSize: 28, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
-                  Menghubungkan UMKM, mempermudah transaksi antar tetangga.
+
+                <h3 className="display" style={{ color: "var(--white)", fontSize: 22, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
+                  Menghubungkan UMKM dan mempermudah transaksi tetangga
                 </h3>
               </div>
 
               {/* Floating trending item card */}
               <div style={{
-                position: "absolute", right: -16, bottom: 60, width: 260,
+                position: "absolute", right: -16, bottom: 100, width: 260,
                 background: "var(--surface)", borderRadius: 14, padding: 18,
                 boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
               }}>
@@ -140,7 +140,7 @@ export default async function Home() {
           <div className="label-eyebrow" style={{ marginBottom: 16 }}>Kategori Pilihan</div>
           <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
             {quickCategories.map((c) => (
-              <Link 
+              <Link
                 key={c.name}
                 href={`/katalog?type=${c.type}&category=${c.slug}`}
                 style={{
@@ -183,10 +183,10 @@ export default async function Home() {
 
           <div className="grid grid-products">
             {topProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                businessName={getBusinessName(product.businessId)} 
+              <ProductCard
+                key={product.id}
+                product={product}
+                businessName={getBusinessName(product.businessId)}
               />
             ))}
           </div>
@@ -208,16 +208,16 @@ export default async function Home() {
 
           <div className="grid grid-products">
             {topServices.map((service) => (
-              <ServiceCard 
-                key={service.id} 
-                service={service} 
-                businessName={getBusinessName(service.businessId)} 
+              <ServiceCard
+                key={service.id}
+                service={service}
+                businessName={getBusinessName(service.businessId)}
               />
             ))}
           </div>
         </div>
       </section>
-      
+
       <style>{`
         @media (max-width: 880px) {
           .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }

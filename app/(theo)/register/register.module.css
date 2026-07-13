@@ -71,11 +71,10 @@
 .visualOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(1, 48, 32, 0.94) 0%,
-    rgba(5, 71, 43, 0.88) 100%
-  );
+  background: linear-gradient(160deg,
+      rgba(1, 48, 32, 0.94) 0%,
+      rgba(5, 71, 43, 0.94) 60%,
+      rgba(1, 48, 32, 0.80) 100%);
   z-index: 1;
 }
 
@@ -376,7 +375,7 @@
   box-shadow: 0 0 0 4px rgba(5, 71, 43, 0.08);
 }
 
-.inputWithIcon:focus + .inputIcon,
+.inputWithIcon:focus+.inputIcon,
 .inputWrapper:focus-within .inputIcon {
   color: var(--color-primary);
 }
@@ -580,23 +579,49 @@
    Keyframes & Animations
    ============================================================ */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulseGlow {
-  0% { transform: scale(1) translate(0, 0); opacity: 0.8; }
-  100% { transform: scale(1.1) translate(5%, 5%); opacity: 1; }
+  0% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.1) translate(5%, 5%);
+    opacity: 1;
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-4px);
+  }
+
+  75% {
+    transform: translateX(4px);
+  }
 }
 
 
@@ -610,7 +635,8 @@
   }
 
   .visualCol {
-    display: none; /* Hide visual col on mobile */
+    display: none;
+    /* Hide visual col on mobile */
   }
 
   .formCol {
@@ -642,6 +668,7 @@
 }
 
 @media (min-width: 969px) {
+
   /* Hide the redundant mobile header on desktop */
   .brandHeader {
     display: none;

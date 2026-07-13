@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const [kewarganegaraan, setKewarganegaraan] = useState('');
   const [noTelepon, setNoTelepon] = useState('');
   const [photoURL, setPhotoURL] = useState('');
+  const [imageError, setImageError] = useState(false);
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string>('');
@@ -29,6 +30,11 @@ export default function ProfilePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset image error on profile data load
+  useEffect(() => {
+    setImageError(false);
+  }, [photoURL, filePreview]);
 
   // Guard: Redirect if not logged in
   useEffect(() => {
@@ -196,7 +202,7 @@ export default function ProfilePage() {
               <p className={styles.subtitle}>Kelola informasi akun & data diri Anda</p>
             </div>
 
-            <div className={styles.avatarSection}>
+             <div className={styles.avatarSection}>
               <div 
                 className={styles.avatarWrapper} 
                 onClick={handleAvatarClick}
@@ -205,12 +211,13 @@ export default function ProfilePage() {
                 aria-label="Ubah foto profil"
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAvatarClick(); }}
               >
-                {filePreview || photoURL ? (
+                {(filePreview || photoURL) && !imageError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img 
                     src={filePreview || photoURL} 
                     alt="Foto Profil" 
                     className={styles.avatar} 
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <div className={styles.avatarFallback}>{getInitials()}</div>

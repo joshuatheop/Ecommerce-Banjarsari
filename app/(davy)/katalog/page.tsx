@@ -14,7 +14,7 @@ interface PageProps {
 
 export default async function CatalogPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  
+
   // Resolve params
   const initialType = params.type === "service" ? "service" : "product";
   const initialCategory = params.category || "";
