@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createJasa } from '@/lib/firestore/jasa';
 import { generateSlug } from '@/lib/firestore/types';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
+import { uploadThumbnail } from '@/lib/storage';
 import type { Category, Business, PriceType, AvailabilityType } from '@/lib/firestore/types';
 import styles from '../form.module.css';
 
@@ -41,10 +42,15 @@ export default function TambahJasaPage() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [categories, setCategories] = useState<Category[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
   const [isNegotiable, setIsNegotiable] = useState(false);
   const [isActive, setIsActive] = useState(true);
+
+  const thumbInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     Promise.all([getCategories(), getBusinesses()]).then(([cats, bizs]) => {
@@ -62,6 +68,13 @@ export default function TambahJasaPage() {
       return next;
     });
     setErrors((p) => ({ ...p, [name]: '' }));
+  };
+
+  const handleThumb = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setThumbFile(file);
+    setThumbPreview(URL.createObjectURL(file));
   };
 
   const validate = () => {
@@ -92,7 +105,12 @@ export default function TambahJasaPage() {
     ev.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    setUploading(true);
     try {
+      const tempId = `temp_service_${Date.now()}`;
+      const thumbnailUrl = thumbFile ? await uploadThumbnail(thumbFile, tempId) : null;
+      setUploading(false);
+
       await createJasa({
         business_id: form.business_id.trim(),
         category_id: form.category_id,
@@ -112,6 +130,7 @@ export default function TambahJasaPage() {
         marketplace: form.marketplace.trim() || null,
         availability_type: form.availability_type,
         slug: form.slug || generateSlug(form.service_name),
+        thumbnail_url: thumbnailUrl,
         is_active: isActive,
       });
       router.push('/admin/jasa');
@@ -119,8 +138,11 @@ export default function TambahJasaPage() {
       setErrors({ global: 'Gagal menyimpan. Cek koneksi atau konfigurasi Firebase.' });
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
   };
+
+  const busy = submitting || uploading;
 
   return (
     <form className={styles.page} onSubmit={handleSubmit} noValidate>
@@ -143,7 +165,7 @@ export default function TambahJasaPage() {
             type="button"
             className={styles.btnSecondary}
             onClick={() => router.push('/admin/jasa')}
-            disabled={submitting}
+            disabled={busy}
           >
             Batal
           </button>
@@ -151,9 +173,9 @@ export default function TambahJasaPage() {
             id="btn-simpan-jasa"
             type="submit"
             className={styles.btnPrimary}
-            disabled={submitting}
+            disabled={busy}
           >
-            {submitting ? 'Menyimpan...' : '✓ Simpan'}
+            {uploading ? 'Mengunggah...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
           </button>
         </div>
       </div>
@@ -185,7 +207,7 @@ export default function TambahJasaPage() {
                 placeholder="Misal: Servis AC & Cuci AC"
                 value={form.service_name}
                 onChange={(e) => set('service_name', e.target.value)}
-                disabled={submitting}
+                disabled={busy}
               />
               {errors.service_name && <span className={styles.errorMsg}>{errors.service_name}</span>}
             </label>
@@ -202,7 +224,7 @@ export default function TambahJasaPage() {
                 placeholder="otomatis dari nama jasa"
                 value={form.slug}
                 onChange={(e) => set('slug', e.target.value)}
-                disabled={submitting}
+                disabled={busy}
               />
             </label>
 
@@ -219,7 +241,7 @@ export default function TambahJasaPage() {
                   className={styles.select}
                   value={form.business_id}
                   onChange={(e) => set('business_id', e.target.value)}
-                  disabled={submitting}
+                  disabled={busy}
                 >
                   <option value="">Pilih UMKM…</option>
                   {businesses.map((b) => (
@@ -242,7 +264,7 @@ export default function TambahJasaPage() {
                   className={styles.select}
                   value={form.category_id}
                   onChange={(e) => set('category_id', e.target.value)}
-                  disabled={submitting}
+                  disabled={busy}
                 >
                   <option value="">Pilih…</option>
                   {categories.map((c) => (
@@ -268,7 +290,7 @@ export default function TambahJasaPage() {
                   className={styles.select}
                   value={form.price_type}
                   onChange={(e) => set('price_type', e.target.value as PriceType)}
-                  disabled={submitting}
+                  disabled={busy}
                 >
                   <option value="FIXED">Harga Tetap (Fixed)</option>
                   <option value="STARTING_FROM">Mulai Dari (Starting From)</option>
@@ -285,7 +307,7 @@ export default function TambahJasaPage() {
                   className={styles.trackCheckbox}
                   checked={isNegotiable}
                   onChange={(e) => setIsNegotiable(e.target.checked)}
-                  disabled={submitting}
+                  disabled={busy}
                 />
                 <label htmlFor="is_negotiable" className={styles.label} style={{ cursor: 'pointer' }}>
                   Bisa Nego (Negotiable)
@@ -308,7 +330,7 @@ export default function TambahJasaPage() {
                     placeholder="cth. 50000"
                     value={form.minimum_price}
                     onChange={(e) => set('minimum_price', e.target.value)}
-                    disabled={submitting}
+                    disabled={busy}
                   />
                   {errors.minimum_price && <span className={styles.errorMsg}>{errors.minimum_price}</span>}
                 </label>
@@ -326,7 +348,7 @@ export default function TambahJasaPage() {
                       placeholder="cth. 150000"
                       value={form.maximum_price}
                       onChange={(e) => set('maximum_price', e.target.value)}
-                      disabled={submitting}
+                      disabled={busy}
                     />
                     {errors.maximum_price && <span className={styles.errorMsg}>{errors.maximum_price}</span>}
                   </label>
@@ -346,7 +368,7 @@ export default function TambahJasaPage() {
                 placeholder="Ceritakan tentang layanan jasa Anda secara lengkap..."
                 value={form.service_description}
                 onChange={(e) => set('service_description', e.target.value)}
-                disabled={submitting}
+                disabled={busy}
               />
             </label>
           </div>
@@ -354,6 +376,59 @@ export default function TambahJasaPage() {
 
         {/* === Aside Col === */}
         <div className={styles.asideCol}>
+          {/* Card: Foto Jasa */}
+          <div className={styles.formCard}>
+            <div className={styles.galleryLabel}>Galeri</div>
+            <div className={styles.galleryTitle}>Foto Layanan Jasa</div>
+
+            {/* Thumbnail zone */}
+            <div
+              className={styles.thumbZone}
+              onClick={() => thumbInputRef.current?.click()}
+            >
+              <input
+                ref={thumbInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleThumb}
+                disabled={busy}
+                style={{ display: 'none' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {thumbPreview ? (
+                <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
+              ) : (
+                <div className={styles.thumbZoneContent}>
+                  <span className={styles.thumbZoneIcon}>🖼️</span>
+                  <span className={styles.thumbZoneText}>Tarik foto utama</span>
+                  <span className={styles.thumbZoneSub}>JPG · PNG · WebP (opsional)</span>
+                </div>
+              )}
+            </div>
+
+            {thumbPreview && (
+              <button
+                type="button"
+                className={styles.btnGhost}
+                style={{ marginTop: 8, width: '100%' }}
+                onClick={() => {
+                  setThumbFile(null);
+                  setThumbPreview('');
+                }}
+                disabled={busy}
+              >
+                Hapus Foto
+              </button>
+            )}
+
+            {uploading && (
+              <div className={styles.uploadProgress}>
+                <div className={styles.uploadSpinner} />
+                Mengunggah ke Firebase Storage...
+              </div>
+            )}
+          </div>
+
           {/* Card: Kontak & Ketersediaan */}
           <div className={styles.formCard}>
             <div className={styles.cardHeader}>
@@ -373,7 +448,7 @@ export default function TambahJasaPage() {
                 placeholder="cth. 628123456789"
                 value={form.whatsapp_number}
                 onChange={(e) => set('whatsapp_number', e.target.value)}
-                disabled={submitting}
+                disabled={busy}
               />
             </label>
 
@@ -389,7 +464,7 @@ export default function TambahJasaPage() {
                 placeholder="cth. https://porto-jasa.com"
                 value={form.marketplace}
                 onChange={(e) => set('marketplace', e.target.value)}
-                disabled={submitting}
+                disabled={busy}
               />
             </label>
 
@@ -405,7 +480,7 @@ export default function TambahJasaPage() {
                 className={styles.select}
                 value={form.availability_type}
                 onChange={(e) => set('availability_type', e.target.value as AvailabilityType)}
-                disabled={submitting}
+                disabled={busy}
               >
                 <option value="ALWAYS_AVAILABLE">Selalu Tersedia (Always Available)</option>
                 <option value="BY_SCHEDULE">Sesuai Jadwal (By Schedule)</option>
@@ -425,7 +500,7 @@ export default function TambahJasaPage() {
                 className={styles.trackCheckbox}
                 checked={isActive}
                 onChange={(e) => setIsActive(e.target.checked)}
-                disabled={submitting}
+                disabled={busy}
               />
             </div>
           </div>

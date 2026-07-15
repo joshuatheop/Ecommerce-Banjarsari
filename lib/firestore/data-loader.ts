@@ -50,6 +50,7 @@ function toServiceItem(id: string, data: Record<string, unknown>): ServiceItem {
     marketplace:         (data.marketplace as string) ?? null,
     availability_type:   (data.availability_type as ServiceItem['availability_type']) || 'ALWAYS_AVAILABLE',
     slug:                (data.slug as string) || '',
+    thumbnail_url:       (data.thumbnail_url as string) ?? null,
     is_active:           (data.is_active as boolean) ?? true,
     createdAt:           data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     updatedAt:           data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),

@@ -220,7 +220,11 @@ export default function AdminJasaPage() {
                   </td>
                   <td className={styles.tdProduk}>
                     <div className={styles.produkCell}>
-                      <div className={styles.thumbPlaceholder}>🛠️</div>
+                      {j.thumbnail_url ? (
+                        <img className={styles.thumbnail} src={j.thumbnail_url} alt={j.service_name} />
+                      ) : (
+                        <div className={styles.thumbPlaceholder}>🛠️</div>
+                      )}
                       <div>
                         <div className={styles.produkName}>{j.service_name}</div>
                         <div className={styles.produkDesc}>

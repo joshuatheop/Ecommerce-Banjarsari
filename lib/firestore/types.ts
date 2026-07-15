@@ -86,6 +86,7 @@ export interface ServiceItem {
   marketplace: string | null;
   availability_type: AvailabilityType;
   slug: string;
+  thumbnail_url: string | null;
   is_active: boolean;
   createdAt?: Date;
   updatedAt?: Date;

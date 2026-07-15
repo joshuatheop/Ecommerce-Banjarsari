@@ -17,9 +17,18 @@ const ServiceCard = ({ service, businessName, categoryName }: ServiceCardProps) 
     <Link href={`/layanan/${service.service_id}`} className="card product-card">
       {/* Thumbnail */}
       <div className="thumb">
-        <div className="thumb-placeholder">
-          <span>{displayCategory}</span>
-        </div>
+        {service.thumbnail_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={service.thumbnail_url}
+            alt={service.service_name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+          />
+        ) : (
+          <div className="thumb-placeholder">
+            <span>{displayCategory}</span>
+          </div>
+        )}
         <div className="badge" style={{ background: 'var(--secondary)', color: 'var(--dark)' }}>
           Jasa
         </div>

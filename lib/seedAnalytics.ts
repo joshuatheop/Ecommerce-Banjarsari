@@ -130,6 +130,7 @@ const SERVICES = [
     marketplace: null,
     availability: 'ALWAYS_AVAILABLE' as AvailabilityType,
     slug: 'servis-hp-smartphone',
+    thumbnail: null,
   },
   {
     id: 'serv-laptop',
@@ -145,6 +146,7 @@ const SERVICES = [
     marketplace: null,
     availability: 'BY_SCHEDULE' as AvailabilityType,
     slug: 'servis-laptop-komputer',
+    thumbnail: null,
   },
   {
     id: 'serv-katering',
@@ -160,6 +162,7 @@ const SERVICES = [
     marketplace: null,
     availability: 'BY_REQUEST' as AvailabilityType,
     slug: 'katering-nasi-box',
+    thumbnail: null,
   }
 ];
 
@@ -300,6 +303,7 @@ export async function seedAnalytics(count = 50): Promise<void> {
       marketplace: s.marketplace,
       availability_type: s.availability,
       slug: s.slug,
+      thumbnail_url: s.thumbnail,
       is_active: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
