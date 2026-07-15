@@ -89,7 +89,6 @@ export default function AdminUmkmPage() {
       {/* ===== Header ===== */}
       <div className={styles.adminHeader}>
         <div>
-          <div className={styles.eyebrow}>PBI-20 · CRUD</div>
           <h1 className={styles.title}>UMKM &amp; Penyedia Jasa</h1>
         </div>
         <div className={styles.headerActions}>
