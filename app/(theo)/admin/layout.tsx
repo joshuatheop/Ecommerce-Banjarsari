@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const NAV_ITEMS = [
     { href: '/admin',          icon: '◈', label: 'Dashboard'  },
     { href: '/admin/produk',   icon: '⊞', label: 'Produk'     },
+    { href: '/admin/jasa',     icon: '⚙', label: 'Jasa'       },
     { href: '/admin/toko',     icon: '⊟', label: 'Toko'       },
     { href: '/admin/kategori', icon: '⊜', label: 'Kategori'   },
     { href: '/',               icon: '⌂', label: 'Laman User' },
