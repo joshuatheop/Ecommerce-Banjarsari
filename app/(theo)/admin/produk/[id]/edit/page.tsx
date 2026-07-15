@@ -41,7 +41,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [submitting, setSubmitting]   = useState(false);
   const [notFound, setNotFound]       = useState(false);
   const [errors, setErrors]           = useState<Partial<Record<keyof FormState | 'global', string>>>({});
-  const [trackingActive, setTrackingActive] = useState(true);
   const [isActive, setIsActive]       = useState(true);
 
   const thumbInputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +60,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         slug:                data.slug,
       });
       setThumbPreview(data.thumbnail_url ?? '');
-      setTrackingActive(data.tracking_active);
       setIsActive(data.is_active);
       setCategories(cats.filter((c) => c.category_type === 'PRODUCT'));
       setBusinesses(bizs);
@@ -118,7 +116,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         whatsapp_number:     form.whatsapp_number.trim() || null,
         marketplace:         form.marketplace.trim() || null,
         thumbnail_url:       finalThumb,
-        tracking_active:     trackingActive,
         is_active:           isActive,
       });
       router.push('/admin/produk');
@@ -289,14 +286,6 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               </label>
             </div>
 
-            <div className={styles.trackRow}>
-              <div className={styles.trackInfo}>
-                <div className={styles.trackTitle}>Aktifkan tracking klik (PBI-28)</div>
-                <div className={styles.trackSub}>Catat setiap klik untuk analytics dashboard</div>
-              </div>
-              <input type="checkbox" className={styles.trackCheckbox}
-                checked={trackingActive} onChange={(e) => setTrackingActive(e.target.checked)} />
-            </div>
             <div className={styles.trackRow}>
               <div className={styles.trackInfo}>
                 <div className={styles.trackTitle}>Produk aktif</div>

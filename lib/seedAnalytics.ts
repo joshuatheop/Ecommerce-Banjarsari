@@ -276,7 +276,6 @@ export async function seedAnalytics(count = 50): Promise<void> {
       whatsapp_number: p.whatsapp,
       marketplace: p.marketplace,
       thumbnail_url: p.thumbnail,
-      tracking_active: true,
       is_active: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),

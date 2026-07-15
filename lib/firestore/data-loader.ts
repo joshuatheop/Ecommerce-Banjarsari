@@ -27,7 +27,6 @@ function toProdukItem(id: string, data: Record<string, unknown>): ProdukItem {
     whatsapp_number:     (data.whatsapp_number as string) ?? null,
     marketplace:         (data.marketplace as string) ?? null,
     thumbnail_url:       (data.thumbnail_url as string) ?? null,
-    tracking_active:     (data.tracking_active as boolean) ?? true,
     is_active:           (data.is_active as boolean) ?? true,
     createdAt:           data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     updatedAt:           data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),

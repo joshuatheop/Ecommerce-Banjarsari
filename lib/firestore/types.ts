@@ -31,7 +31,6 @@ export interface ProdukItem {
   whatsapp_number: string | null;
   marketplace: string | null;
   thumbnail_url: string | null;
-  tracking_active: boolean;
   is_active: boolean;
   createdAt?: Date;
   updatedAt?: Date;

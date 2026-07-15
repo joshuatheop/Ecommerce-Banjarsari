@@ -372,64 +372,8 @@ export default function TambahJasaPage() {
               />
             </label>
           </div>
-        </div>
 
-        {/* === Aside Col === */}
-        <div className={styles.asideCol}>
-          {/* Card: Foto Jasa */}
-          <div className={styles.formCard}>
-            <div className={styles.galleryLabel}>Galeri</div>
-            <div className={styles.galleryTitle}>Foto Layanan Jasa</div>
-
-            {/* Thumbnail zone */}
-            <div
-              className={styles.thumbZone}
-              onClick={() => thumbInputRef.current?.click()}
-            >
-              <input
-                ref={thumbInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleThumb}
-                disabled={busy}
-                style={{ display: 'none' }}
-                onClick={(e) => e.stopPropagation()}
-              />
-              {thumbPreview ? (
-                <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
-              ) : (
-                <div className={styles.thumbZoneContent}>
-                  <span className={styles.thumbZoneIcon}>🖼️</span>
-                  <span className={styles.thumbZoneText}>Tarik foto utama</span>
-                  <span className={styles.thumbZoneSub}>JPG · PNG · WebP (opsional)</span>
-                </div>
-              )}
-            </div>
-
-            {thumbPreview && (
-              <button
-                type="button"
-                className={styles.btnGhost}
-                style={{ marginTop: 8, width: '100%' }}
-                onClick={() => {
-                  setThumbFile(null);
-                  setThumbPreview('');
-                }}
-                disabled={busy}
-              >
-                Hapus Foto
-              </button>
-            )}
-
-            {uploading && (
-              <div className={styles.uploadProgress}>
-                <div className={styles.uploadSpinner} />
-                Mengunggah ke Firebase Storage...
-              </div>
-            )}
-          </div>
-
-          {/* Card: Kontak & Ketersediaan */}
+          {/* Card: Tautan & Ketersediaan */}
           <div className={styles.formCard}>
             <div className={styles.cardHeader}>
               <div className={styles.cardEyebrow}>Kanal & Status</div>
@@ -503,6 +447,62 @@ export default function TambahJasaPage() {
                 disabled={busy}
               />
             </div>
+          </div>
+        </div>
+
+        {/* === Aside Col === */}
+        <div className={styles.asideCol}>
+          {/* Card: Foto Jasa */}
+          <div className={styles.formCard}>
+            <div className={styles.galleryLabel}>Galeri</div>
+            <div className={styles.galleryTitle}>Foto Layanan Jasa</div>
+
+            {/* Thumbnail zone */}
+            <div
+              className={styles.thumbZone}
+              onClick={() => thumbInputRef.current?.click()}
+            >
+              <input
+                ref={thumbInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleThumb}
+                disabled={busy}
+                style={{ display: 'none' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              {thumbPreview ? (
+                <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
+              ) : (
+                <div className={styles.thumbZoneContent}>
+                  <span className={styles.thumbZoneIcon}>🖼️</span>
+                  <span className={styles.thumbZoneText}>Tarik foto utama</span>
+                  <span className={styles.thumbZoneSub}>JPG · PNG · WebP (opsional)</span>
+                </div>
+              )}
+            </div>
+
+            {thumbPreview && (
+              <button
+                type="button"
+                className={styles.btnGhost}
+                style={{ marginTop: 8, width: '100%' }}
+                onClick={() => {
+                  setThumbFile(null);
+                  setThumbPreview('');
+                }}
+                disabled={busy}
+              >
+                Hapus Foto
+              </button>
+            )}
+
+            {uploading && (
+              <div className={styles.uploadProgress}>
+                <div className={styles.uploadSpinner} />
+                Mengunggah ke Firebase Storage...
+              </div>
+            )}
           </div>
         </div>
       </div>

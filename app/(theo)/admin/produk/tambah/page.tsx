@@ -21,28 +21,27 @@ interface FormState {
 }
 
 const INITIAL: FormState = {
-  product_name:        '',
-  business_id:         '',
-  category_id:         '',
-  product_price:       '',
+  product_name: '',
+  business_id: '',
+  category_id: '',
+  product_price: '',
   product_description: '',
-  whatsapp_number:     '',
-  marketplace:         '',
-  slug:                '',
+  whatsapp_number: '',
+  marketplace: '',
+  slug: '',
 };
 
 export default function TambahProdukPage() {
   const router = useRouter();
-  const [form, setForm]               = useState<FormState>(INITIAL);
-  const [categories, setCategories]   = useState<Category[]>([]);
-  const [businesses, setBusinesses]   = useState<Business[]>([]);
-  const [thumbFile, setThumbFile]     = useState<File | null>(null);
+  const [form, setForm] = useState<FormState>(INITIAL);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState('');
-  const [uploading, setUploading]     = useState(false);
-  const [submitting, setSubmitting]   = useState(false);
-  const [errors, setErrors]           = useState<Partial<Record<keyof FormState | 'global', string>>>({});
-  const [trackingActive, setTrackingActive] = useState(true);
-  const [isActive, setIsActive]       = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [isActive, setIsActive] = useState(true);
 
   const thumbInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,9 +73,9 @@ export default function TambahProdukPage() {
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.product_name.trim())        e.product_name        = 'Wajib diisi.';
-    if (!form.business_id.trim())         e.business_id         = 'Wajib diisi.';
-    if (!form.category_id)               e.category_id         = 'Pilih kategori.';
+    if (!form.product_name.trim()) e.product_name = 'Wajib diisi.';
+    if (!form.business_id.trim()) e.business_id = 'Wajib diisi.';
+    if (!form.category_id) e.category_id = 'Pilih kategori.';
     if (!form.product_price || Number(form.product_price) <= 0) e.product_price = 'Harga harus > 0.';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -88,21 +87,20 @@ export default function TambahProdukPage() {
     setSubmitting(true);
     setUploading(true);
     try {
-      const tempId       = `temp_${Date.now()}`;
+      const tempId = `temp_${Date.now()}`;
       const thumbnailUrl = thumbFile ? await uploadThumbnail(thumbFile, tempId) : null;
       setUploading(false);
       await createProduk({
-        business_id:         form.business_id.trim(),
-        category_id:         form.category_id,
-        product_name:        form.product_name.trim(),
+        business_id: form.business_id.trim(),
+        category_id: form.category_id,
+        product_name: form.product_name.trim(),
         product_description: form.product_description.trim() || null,
-        product_price:       Number(form.product_price),
-        slug:                form.slug || generateSlug(form.product_name),
-        whatsapp_number:     form.whatsapp_number.trim() || null,
-        marketplace:         form.marketplace.trim() || null,
-        thumbnail_url:       thumbnailUrl,
-        tracking_active:     trackingActive,
-        is_active:           isActive,
+        product_price: Number(form.product_price),
+        slug: form.slug || generateSlug(form.product_name),
+        whatsapp_number: form.whatsapp_number.trim() || null,
+        marketplace: form.marketplace.trim() || null,
+        thumbnail_url: thumbnailUrl,
+        is_active: isActive,
       });
       router.push('/admin/produk');
     } catch {
@@ -128,7 +126,6 @@ export default function TambahProdukPage() {
       {/* Header */}
       <div className={styles.adminHeader}>
         <div>
-          <div className={styles.eyebrow}>PBI-24</div>
           <h1 className={styles.title}>Tambah Produk Baru</h1>
           <div className={styles.pbiNote}>Isi informasi produk UMKM.</div>
         </div>
@@ -259,15 +256,7 @@ export default function TambahProdukPage() {
               </label>
             </div>
 
-            {/* Tracking & Status */}
-            <div className={styles.trackRow}>
-              <div className={styles.trackInfo}>
-                <div className={styles.trackTitle}>Aktifkan tracking klik (PBI-28)</div>
-                <div className={styles.trackSub}>Catat setiap klik untuk analytics dashboard</div>
-              </div>
-              <input type="checkbox" className={styles.trackCheckbox}
-                checked={trackingActive} onChange={(e) => setTrackingActive(e.target.checked)} />
-            </div>
+            {/* Status */}
             <div className={styles.trackRow}>
               <div className={styles.trackInfo}>
                 <div className={styles.trackTitle}>Produk aktif</div>
