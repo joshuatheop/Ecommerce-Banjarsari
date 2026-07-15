@@ -3,32 +3,34 @@
 import { useEffect, useState, useCallback } from 'react';
 import { subscribeAnalytics } from '@/lib/firestore/analytics';
 import { seedAnalytics as runSeed } from '@/lib/seedAnalytics';
-import type { DashboardStats, ChannelClickType } from '@/lib/firestore/analytics';
+import type { DashboardStats, EventType } from '@/lib/firestore/analytics';
 import styles from './dashboard.module.css';
 
 /* ============================================================
-   Admin Dashboard — terhubung ke Firestore koleksi `analytics`
-   PBI-18: Awareness Tracking   → Total_Visitors
-   PBI-19: Analytics Top Access → Top_Clicked_Item, Top_Business_Profile
-   PBI-20: Channel Analytics    → Channel_Click_Type
+   Admin Dashboard — terhubung ke Firestore koleksi `analytics_events`
+   PBI-18: Awareness Tracking   → totalSessions
+   PBI-19: Analytics Top Access → topProducts, topBusinesses
+   PBI-20: Channel Analytics    → eventTypeCounts
    ============================================================ */
 
-// Label display untuk Channel_Click_Type enum
-const CHANNEL_LABELS: Record<ChannelClickType, string> = {
-  click_wa: 'Tombol WhatsApp',
-  click_marketplace: 'Tombol Marketplace',
-  salin_link: 'Salin Link',
-  view_item: 'Lihat Detail Item',
-  view_business: 'Lihat Profil Toko',
+// Label display untuk EventType enum
+const EVENT_LABELS: Record<EventType, string> = {
+  WHATSAPP_CLICK:    'Tombol WhatsApp',
+  MARKETPLACE_CLICK: 'Tombol Marketplace',
+  SHARE_CLICK:       'Bagikan / Salin Link',
+  PRODUCT_VIEW:      'Lihat Detail Produk',
+  SERVICE_VIEW:      'Lihat Detail Jasa',
+  BUSINESS_VIEW:     'Lihat Profil UMKM',
 };
 
-// Warna bar per channel
-const CHANNEL_COLORS: Record<ChannelClickType, string> = {
-  click_wa: 'aqua',
-  click_marketplace: 'green',
-  salin_link: 'accent',
-  view_item: 'muted',
-  view_business: 'muted',
+// Warna bar per event type
+const EVENT_COLORS: Record<EventType, string> = {
+  WHATSAPP_CLICK:    'aqua',
+  MARKETPLACE_CLICK: 'green',
+  SHARE_CLICK:       'accent',
+  PRODUCT_VIEW:      'muted',
+  SERVICE_VIEW:      'muted',
+  BUSINESS_VIEW:     'muted',
 };
 
 /* ---- FakeChart (SVG) — tetap statis untuk tren visual ---- */
@@ -115,7 +117,7 @@ export default function AdminDashboardPage() {
 
   // Hitung max untuk progress bar channel
   const channelEntries = stats
-    ? (Object.entries(stats.channelCounts) as [ChannelClickType, number][])
+    ? (Object.entries(stats.eventTypeCounts) as [EventType, number][])
       .filter(([, v]) => v > 0)
       .sort((a, b) => b[1] - a[1])
     : [];
@@ -151,30 +153,26 @@ export default function AdminDashboardPage() {
       {/* ===== PBI-18: STAT CARDS ===== */}
       <div className={styles.statGrid}>
         <StatCard
-          label="Total Pengunjung"
-          value={stats?.totalVisitors.toLocaleString('id-ID') ?? '—'}
+          label="Total Sesi Pengunjung"
+          value={stats?.totalSessions.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="+18,3%" dir="up"
         />
         <StatCard
           label="Total Event Tercatat"
-          value={
-            stats
-              ? Object.values(stats.channelCounts).reduce((a, b) => a + b, 0).toLocaleString('id-ID')
-              : '—'
-          }
+          value={stats?.totalEvents.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="+34,1%" dir="up"
         />
         <StatCard
           label="Klik WhatsApp"
-          value={stats?.channelCounts.click_wa.toLocaleString('id-ID') ?? '—'}
+          value={stats?.eventTypeCounts.WHATSAPP_CLICK.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="+12,4%" dir="up"
         />
         <StatCard
           label="Klik Marketplace"
-          value={stats?.channelCounts.click_marketplace.toLocaleString('id-ID') ?? '—'}
+          value={stats?.eventTypeCounts.MARKETPLACE_CLICK.toLocaleString('id-ID') ?? '—'}
           loading={loading}
           delta="−4,2%" dir="down"
         />
@@ -202,19 +200,19 @@ export default function AdminDashboardPage() {
 
         {/* PBI-20: Channel Analytics bar chart */}
         <div className={styles.card}>
-          <h4 className={styles.cardTitle}>Tombol paling sering diklik</h4>
+          <h4 className={styles.cardTitle}>Aktivitas paling sering</h4>
           <div className={styles.barList}>
             {loading ? (
-              [1, 2, 3, 4].map(i => <div key={i} className={`${styles.barRow} ${styles.skeleton}`} style={{ height: 36 }} />)
+              [1, 2, 3, 4].map((i) => <div key={i} className={`${styles.barRow} ${styles.skeleton}`} style={{ height: 36 }} />)
             ) : channelEntries.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data. Klik &quot;Seed Data&quot; untuk mencoba.</p>
             ) : (
               channelEntries.map(([ch, val]) => (
                 <div key={ch} className={styles.barRow}>
-                  <span className={styles.barName}>{CHANNEL_LABELS[ch]}</span>
+                  <span className={styles.barName}>{EVENT_LABELS[ch]}</span>
                   <div className={styles.barTrack}>
                     <div
-                      className={`${styles.barFill} ${styles[`fill_${CHANNEL_COLORS[ch]}`]}`}
+                      className={`${styles.barFill} ${styles[`fill_${EVENT_COLORS[ch]}`]}`}
                       style={{ width: `${(val / maxChannel) * 100}%` }}
                     />
                   </div>
@@ -228,16 +226,16 @@ export default function AdminDashboardPage() {
 
       {/* ===== PBI-19: TOP ITEMS ROW ===== */}
       <div className={styles.topRow}>
-        {/* Top_Clicked_Item */}
+        {/* Top Products */}
         <div className={styles.card}>
-          <h4 className={styles.cardTitle}>Item Paling Populer</h4>
+          <h4 className={styles.cardTitle}>Produk Paling Populer</h4>
           <div className={styles.itemList}>
             {loading ? (
-              [1, 2, 3, 4, 5, 6].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
-            ) : stats?.topItems.length === 0 ? (
+              [1, 2, 3, 4, 5, 6].map((i) => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
+            ) : stats?.topProducts.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data.</p>
             ) : (
-              stats?.topItems.map((it, i) => (
+              stats?.topProducts.map((it, i) => (
                 <div key={it.name} className={`${styles.itemRow} ${i > 0 ? styles.itemRowBorder : ''}`}>
                   <span className={styles.rank}>#{i + 1}</span>
                   <div
@@ -255,12 +253,12 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Top_Business_Profile */}
+        {/* Top Businesses */}
         <div className={styles.card}>
           <h4 className={styles.cardTitle}>UMKM Terpopuler</h4>
           <div className={styles.itemList}>
             {loading ? (
-              [1, 2, 3, 4, 5].map(i => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
+              [1, 2, 3, 4, 5].map((i) => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
             ) : stats?.topBusinesses.length === 0 ? (
               <p className={styles.emptyText}>Belum ada data.</p>
             ) : (
@@ -296,10 +294,10 @@ export default function AdminDashboardPage() {
             <thead>
               <tr>
                 <th>Waktu</th>
-                <th>Top_Clicked_Item</th>
-                <th>Top_Business_Profile</th>
-                <th>Channel_Click_Type</th>
-                <th>Total_Visitors</th>
+                <th>Event</th>
+                <th>Produk / Jasa</th>
+                <th>UMKM</th>
+                <th>Tujuan</th>
               </tr>
             </thead>
             <tbody>
@@ -311,16 +309,16 @@ export default function AdminDashboardPage() {
                 </td></tr>
               ) : (
                 stats?.recentEvents.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.event_id}>
                     <td className={styles.tdMono}>
-                      {r.timestamp
-                        ? new Date(r.timestamp.toMillis()).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                      {r.createdAt
+                        ? new Date(r.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
                         : '—'}
                     </td>
-                    <td className={styles.tdBold}>{r.Top_Clicked_Item || '—'}</td>
-                    <td>{r.Top_Business_Profile || '—'}</td>
-                    <td><span className={styles.tag}>{r.Channel_Click_Type}</span></td>
-                    <td className={styles.tdMono}>{r.Total_Visitors}</td>
+                    <td><span className={styles.tag}>{r.event_type}</span></td>
+                    <td className={styles.tdBold}>{r.product_id || r.service_id || '—'}</td>
+                    <td>{r.business_id || '—'}</td>
+                    <td className={styles.tdMono}>{r.destination_url || '—'}</td>
                   </tr>
                 ))
               )}
