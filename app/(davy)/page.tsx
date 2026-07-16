@@ -14,30 +14,30 @@ export default async function Home() {
   ]);
 
   // Guard: ensure arrays even if Firebase returns undefined unexpectedly
-  const products = rawProducts ?? [];
-  const services = rawServices ?? [];
+  const products   = rawProducts  ?? [];
+  const services   = rawServices  ?? [];
   const businesses = rawBusinesses ?? [];
 
-  // Map business ID to Name for quick lookups
-  const businessMap = new Map(businesses.map((b) => [b.id, b.name]));
+  // Map business_id to business_name for quick lookups
+  const businessMap = new Map(businesses.map((b) => [b.business_id, b.business_name]));
   const getBusinessName = (id: string) => businessMap.get(id) || "UMKM Banjarsari";
 
-  // Sort and slice top items (PBI-01 and PBI-02)
+  // Sort and slice top items (PBI-01 and PBI-02) — by product_name alphabetically
   const topProducts = [...products]
-    .sort((a, b) => b.clickCount - a.clickCount)
+    .sort((a, b) => a.product_name.localeCompare(b.product_name))
     .slice(0, 4);
 
   const topServices = [...services]
-    .sort((a, b) => b.clickCount - a.clickCount)
+    .sort((a, b) => a.service_name.localeCompare(b.service_name))
     .slice(0, 4);
 
   // Quick categories
   const quickCategories = [
-    { name: "Makanan & Minuman", icon: "🍚", slug: "makanan", type: "product" },
-    { name: "Kerajinan Tangan", icon: "🧺", slug: "kerajinan", type: "product" },
-    { name: "Camilan", icon: "🥨", slug: "camilan", type: "product" },
-    { name: "Jasa Reparasi", icon: "🔧", slug: "reparasi-elektronik", type: "service" },
-    { name: "Kecantikan", icon: "💇", slug: "kecantikan", type: "service" },
+    { name: "Makanan & Minuman", icon: "🍚", categoryId: "1", type: "product" },
+    { name: "Kerajinan Tangan",  icon: "🧺", categoryId: "2", type: "product" },
+    { name: "Camilan",           icon: "🥨", categoryId: "3", type: "product" },
+    { name: "Jasa Reparasi",     icon: "🔧", categoryId: "5", type: "service" },
+    { name: "Kecantikan",        icon: "💇", categoryId: "6", type: "service" },
   ];
 
   return (
@@ -104,7 +104,7 @@ export default async function Home() {
                   letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", justifyContent: "space-between",
                 }}>
                   <span>★ KARYA WARGA</span>
-                  <span>Banjarsari ’26</span>
+                  <span>Banjarsari &apos;26</span>
                 </div>
 
                 <h3 className="display" style={{ color: "var(--white)", fontSize: 22, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
@@ -119,13 +119,15 @@ export default async function Home() {
                 boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
               }}>
                 <div className="label-eyebrow" style={{ marginBottom: 6, color: "var(--primary)" }}>Terpopuler Hari Ini</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>Batik Sari Asih</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>
+                  {businesses[0]?.business_name ?? 'Batik Sari Asih'}
+                </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: "var(--primary)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
-                    Kain Motif Tulis
+                    {topProducts[0]?.product_name ?? 'Kain Motif Tulis'}
                   </span>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
-                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> 487 klik
+                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> Unggulan
                   </span>
                 </div>
               </div>
@@ -142,7 +144,7 @@ export default async function Home() {
             {quickCategories.map((c) => (
               <Link
                 key={c.name}
-                href={`/katalog?type=${c.type}&category=${c.slug}`}
+                href={`/katalog?type=${c.type}&category=${c.categoryId}`}
                 style={{
                   background: "var(--surface)", border: "1px solid var(--line)",
                   borderRadius: 14, padding: "16px 20px",
@@ -184,9 +186,9 @@ export default async function Home() {
           <div className="grid grid-products">
             {topProducts.map((product) => (
               <ProductCard
-                key={product.id}
+                key={product.product_id}
                 product={product}
-                businessName={getBusinessName(product.businessId)}
+                businessName={getBusinessName(product.business_id)}
               />
             ))}
           </div>
@@ -209,9 +211,9 @@ export default async function Home() {
           <div className="grid grid-products">
             {topServices.map((service) => (
               <ServiceCard
-                key={service.id}
+                key={service.service_id}
                 service={service}
-                businessName={getBusinessName(service.businessId)}
+                businessName={getBusinessName(service.business_id)}
               />
             ))}
           </div>

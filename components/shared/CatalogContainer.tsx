@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Product, Service, Business, Category } from '@/lib/firestore/types';
+import type { ProdukItem, ServiceItem, Business, Category } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import ProductCard from './ProductCard';
 import ServiceCard from './ServiceCard';
 import { Icons } from './Icons';
 
 interface CatalogContainerProps {
-  products: Product[];
-  services: Service[];
+  products: ProdukItem[];
+  services: ServiceItem[];
   businesses: Business[];
   categories: Category[];
   areas: string[];
@@ -31,38 +32,53 @@ const CatalogContainer = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [activeArea, setActiveArea] = useState('');
-  const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
+  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'name'>('name');
 
-  // Build business map
+  // Build business map: business_id → business_name
   const businessMap = useMemo(
-    () => new Map(businesses.map((b) => [b.id, b.name])),
+    () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
     [businesses]
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
-  // Filter & sort
+  // Build category map: category_id → category_name
+  const categoryMap = useMemo(
+    () => new Map(categories.map((c) => [c.category_id, c.category_name])),
+    [categories]
+  );
+  const getCategoryName = (id: string) => categoryMap.get(id) || id;
+
+  // Filter & sort products
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category === activeCategory);
-    if (searchQuery) list = list.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
-    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
-    else list.sort((a, b) => b.price - a.price);
+    if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
+    if (searchQuery) list = list.filter(
+      (p) => p.product_name.toLowerCase().includes(searchQuery.toLowerCase())
+        || (p.product_description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
+    else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
+    else list.sort((a, b) => a.product_name.localeCompare(b.product_name));
     return list;
   }, [products, activeCategory, searchQuery, sortBy]);
 
+  // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category === activeCategory);
-    if (searchQuery) list = list.filter((s) => s.name.toLowerCase().includes(searchQuery.toLowerCase()) || s.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
-    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
-    else list.sort((a, b) => b.price - a.price);
+    if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
+    if (searchQuery) list = list.filter(
+      (s) => s.service_name.toLowerCase().includes(searchQuery.toLowerCase())
+        || (s.service_description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
+    else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
+    else list.sort((a, b) => a.service_name.localeCompare(b.service_name));
     return list;
   }, [services, activeCategory, searchQuery, sortBy]);
 
+  // Categories visible for current type
   const visibleCategories = useMemo(
-    () => categories.filter((c) => c.type === type || c.type === 'both'),
+    () => categories.filter((c) => c.category_type === (type === 'product' ? 'PRODUCT' : 'SERVICE')),
     [categories, type]
   );
 
@@ -105,11 +121,11 @@ const CatalogContainer = ({
             </button>
             {visibleCategories.map((c) => (
               <button
-                key={c.id}
-                onClick={() => setActiveCategory(activeCategory === c.slug ? '' : c.slug)}
-                className={`chip ${activeCategory === c.slug ? 'tonal' : ''}`}
+                key={c.category_id}
+                onClick={() => setActiveCategory(activeCategory === c.category_id ? '' : c.category_id)}
+                className={`chip ${activeCategory === c.category_id ? 'tonal' : ''}`}
               >
-                {c.icon} {c.name}
+                {c.icon} {c.category_name}
               </button>
             ))}
           </div>
@@ -141,8 +157,8 @@ const CatalogContainer = ({
                 <h4>Urutkan</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {[
-                    { value: 'popular', label: 'Paling Populer' },
-                    { value: 'price-asc', label: 'Harga Terendah' },
+                    { value: 'name',       label: 'Nama A–Z' },
+                    { value: 'price-asc',  label: 'Harga Terendah' },
                     { value: 'price-desc', label: 'Harga Tertinggi' },
                   ].map((opt) => (
                     <label key={opt.value} className="check-row">
@@ -184,7 +200,7 @@ const CatalogContainer = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)', opacity: 0.7 }}>
                   Menampilkan <strong>{totalCount}</strong> hasil
-                  {activeCategory ? ` · ${activeCategory}` : ''}
+                  {activeCategory ? ` · ${getCategoryName(activeCategory)}` : ''}
                   {searchQuery ? ` · "${searchQuery}"` : ''}
                 </div>
                 {(activeCategory || searchQuery) && (
@@ -206,10 +222,20 @@ const CatalogContainer = ({
                 <div className="grid grid-products">
                   {type === 'product'
                     ? filteredProducts.map((p) => (
-                        <ProductCard key={p.id} product={p} businessName={getBusinessName(p.businessId)} />
+                        <ProductCard
+                          key={p.product_id}
+                          product={p}
+                          businessName={getBusinessName(p.business_id)}
+                          categoryName={getCategoryName(p.category_id)}
+                        />
                       ))
                     : filteredServices.map((s) => (
-                        <ServiceCard key={s.id} service={s} businessName={getBusinessName(s.businessId)} />
+                        <ServiceCard
+                          key={s.service_id}
+                          service={s}
+                          businessName={getBusinessName(s.business_id)}
+                          categoryName={getCategoryName(s.category_id)}
+                        />
                       ))}
                 </div>
               )}
