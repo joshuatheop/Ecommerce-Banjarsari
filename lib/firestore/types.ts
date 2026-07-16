@@ -30,6 +30,7 @@ export interface ProdukItem {
   slug: string;
   whatsapp_number: string | null;
   marketplace: string | null;
+  media_sosial: string | null;
   thumbnail_url: string | null;
   is_active: boolean;
   createdAt?: Date;

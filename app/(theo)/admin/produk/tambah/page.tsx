@@ -17,6 +17,7 @@ interface FormState {
   product_description: string;
   whatsapp_number: string;
   marketplace: string;
+  media_sosial: string;
   slug: string;
 }
 
@@ -28,6 +29,7 @@ const INITIAL: FormState = {
   product_description: '',
   whatsapp_number: '',
   marketplace: '',
+  media_sosial: '',
   slug: '',
 };
 
@@ -99,6 +101,7 @@ export default function TambahProdukPage() {
         slug: form.slug || generateSlug(form.product_name),
         whatsapp_number: form.whatsapp_number.trim() || null,
         marketplace: form.marketplace.trim() || null,
+        media_sosial: form.media_sosial.trim() || null,
         thumbnail_url: thumbnailUrl,
         is_active: isActive,
       });
@@ -253,6 +256,16 @@ export default function TambahProdukPage() {
                 <input id="marketplace" className={styles.input} type="url"
                   placeholder="cth. https://shopee.co.id/..."
                   value={form.marketplace} onChange={(e) => set('marketplace', e.target.value)} disabled={busy} />
+              </label>
+
+              <label className={`${styles.field} ${styles.fullWidth}`}>
+                <div className={styles.fieldLabel}>
+                  <span className={styles.label}>Link Media Sosial</span>
+                  <span className={styles.labelOptional}>Opsional</span>
+                </div>
+                <input id="media_sosial" className={styles.input} type="url"
+                  placeholder="cth. https://instagram.com/..."
+                  value={form.media_sosial} onChange={(e) => set('media_sosial', e.target.value)} disabled={busy} />
               </label>
             </div>
 
