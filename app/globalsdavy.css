@@ -7,63 +7,72 @@
    ============================================================ */
 .davy-theme {
   /* === Core brand colors === */
-  --primary: #05472B;        /* Dark Green */
-  --secondary: #AADCAB;      /* Light Green */
-  --dark: #013020;           /* Dark Green Background / Footer */
-  --accent-y: #CDFF00;       /* Yellow Green */
-  --aqua: #00C0A3;           /* Aqua Green */
+  --primary: #05472B;
+  /* Dark Green */
+  --secondary: #AADCAB;
+  /* Light Green */
+  --dark: #013020;
+  /* Dark Green Background / Footer */
+  --accent-y: #CDFF00;
+  /* Yellow Green */
+  --aqua: #00C0A3;
+  /* Aqua Green */
   --black: #000000;
   --white: #FFFFFF;
 
   /* === UI Palette === */
-  --bg: #F4F7F5;             /* Very light, clean green-tinted background */
-  --surface: #FFFFFF;        /* Pure white for premium look */
-  --surface-2: #E8EFEA;      /* Light green-tinted grey surface */
-  --surface-3: #D0DFD5;      /* Medium light green-tinted grey */
+  --bg: #F4F7F5;
+  /* Very light, clean green-tinted background */
+  --surface: #FFFFFF;
+  /* Pure white for premium look */
+  --surface-2: #E8EFEA;
+  /* Light green-tinted grey surface */
+  --surface-3: #D0DFD5;
+  /* Medium light green-tinted grey */
 
   /* === Color aliases === */
-  --color-primary:   #05472B;
+  --color-primary: #05472B;
   --color-secondary: #AADCAB;
-  --color-dark:      #013020;
-  --color-accent:    #CDFF00;
-  --color-aqua:      #00C0A3;
-  --color-black:     #000000;
-  --color-white:     #FFFFFF;
+  --color-dark: #013020;
+  --color-accent: #CDFF00;
+  --color-aqua: #00C0A3;
+  --color-black: #000000;
+  --color-white: #FFFFFF;
 
   /* === Text === */
-  --text-primary:   #011A0F;
+  --text-primary: #011A0F;
   --text-secondary: #2D5740;
-  --text-muted:     #6B8F78;
+  --text-muted: #6B8F78;
 
   /* === Border / Line === */
-  --line:          rgba(5, 71, 43, 0.08);
-  --line-strong:   rgba(5, 71, 43, 0.16);
-  --border:        rgba(5, 71, 43, 0.12);
+  --line: rgba(5, 71, 43, 0.08);
+  --line-strong: rgba(5, 71, 43, 0.16);
+  --border: rgba(5, 71, 43, 0.12);
   --border-strong: rgba(5, 71, 43, 0.22);
 
   /* === Shape === */
   --radius-sm: 6px;
-  --radius:    10px;
+  --radius: 10px;
   --radius-lg: 16px;
   --radius-xl: 24px;
 
   /* === Shadows === */
   --shadow-sm: 0 1px 2px rgba(1, 48, 32, 0.04), 0 1px 1px rgba(1, 48, 32, 0.02);
-  --shadow:    0 4px 14px rgba(1, 48, 32, 0.06), 0 1px 2px rgba(1, 48, 32, 0.03);
+  --shadow: 0 4px 14px rgba(1, 48, 32, 0.06), 0 1px 2px rgba(1, 48, 32, 0.03);
   --shadow-lg: 0 24px 60px rgba(1, 48, 32, 0.12), 0 8px 18px rgba(1, 48, 32, 0.05);
 
   /* === Typography === */
   --font-display: 'JetBrains Mono', ui-monospace, monospace;
-  --font-ui:      'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+  --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-heading: 'JetBrains Mono', ui-monospace, monospace;
-  --font-body:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 
   /* === Base styles === */
-  background:  var(--bg);
-  color:       var(--dark);
+  background: var(--bg);
+  color: var(--dark);
   font-family: var(--font-ui);
-  font-size:   15px;
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -82,7 +91,9 @@
     color: inherit;
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     font-family: var(--font-body);
     font-size: inherit;
     color: inherit;
@@ -773,4 +784,423 @@
       text-align: center;
     }
   }
+}
+
+/* ══════════════════════════════════════════════
+   FL-CARD — Foot Locker-style Product Cards
+══════════════════════════════════════════════ */
+.fl-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  text-decoration: none;
+  transition: box-shadow 0.18s;
+  cursor: pointer;
+  position: relative;
+}
+
+.fl-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  z-index: 1;
+}
+
+.fl-card-thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: #F5F5F5;
+  overflow: hidden;
+}
+
+.fl-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+  display: block;
+}
+
+.fl-card:hover .fl-card-img {
+  transform: scale(1.04);
+}
+
+.fl-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(135deg, #F0F0F0 0 14px, #E8E8E8 14px 28px);
+}
+
+.fl-card-placeholder span {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #555;
+}
+
+.fl-card-fav {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  cursor: pointer;
+  color: #555;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s;
+  z-index: 1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fl-card-fav:hover {
+  background: #fff;
+  color: #e00;
+  transform: scale(1.1);
+}
+
+.fl-card-hot-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #05472B;
+  color: #CDFF00;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.fl-card-service-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #AADCAB;
+  color: #05472B;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+}
+
+.fl-card-body {
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.fl-card-brand {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #888;
+  font-family: var(--font-ui);
+}
+
+.fl-card-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.3;
+  font-family: var(--font-ui);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fl-card-meta {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.fl-card-cat {
+  font-size: 11px;
+  color: #888;
+  font-family: var(--font-ui);
+  text-transform: capitalize;
+}
+
+.fl-card-price {
+  font-size: 15px;
+  font-weight: 800;
+  color: #111;
+  font-family: var(--font-display);
+  margin-top: 6px;
+}
+
+.fl-card-clicks {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: #888;
+  font-family: var(--font-mono);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   PBI-05 & PBI-06: Most Favorite Ranking Lists (Yang Lagi Naik)
+   ============================================================ */
+.fl-fav-section {
+  background: var(--bg);
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
+  padding: 64px 0;
+}
+
+.fl-fav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+@media (max-width: 880px) {
+  .fl-fav-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.fl-fav-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fl-fav-col-header {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--line-strong);
+}
+
+.fl-fav-col-header.product {
+  color: var(--primary);
+}
+
+.fl-fav-col-header.service {
+  color: var(--text-secondary);
+}
+
+/* Rank Row Card Styling */
+.fl-rank-row {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.fl-rank-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.fl-rank-row:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow);
+  border-color: var(--border-strong);
+}
+
+.fl-rank-row:hover::before {
+  background: var(--primary);
+}
+
+/* Promo Card Specific Styling */
+.fl-rank-row.promo-card {
+  border: 2px dashed var(--border-strong);
+  background: rgba(5, 71, 43, 0.02);
+  box-shadow: none;
+}
+
+.fl-rank-row.promo-card:hover {
+  background: rgba(5, 71, 43, 0.05);
+  border-color: var(--primary);
+  transform: translateX(4px);
+}
+
+.fl-rank-row.promo-card::before {
+  display: none;
+}
+
+.fl-rank-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.fl-rank-num.promo-plus {
+  color: var(--primary);
+  font-size: 32px;
+}
+
+/* Rank Specific Accents */
+.fl-rank-num.rank-1 {
+  color: #FFB800;
+  /* Gold */
+}
+
+.fl-rank-num.rank-2 {
+  color: #8E9AA6;
+  /* Silver */
+}
+
+.fl-rank-num.rank-3 {
+  color: #CD7F32;
+  /* Bronze */
+}
+
+.fl-rank-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid var(--line-strong);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.fl-rank-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.fl-rank-row:hover .fl-rank-img {
+  transform: scale(1.08);
+}
+
+.fl-rank-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 10px, var(--surface-3) 10px 20px);
+}
+
+.fl-rank-placeholder span {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: var(--primary);
+}
+
+.fl-rank-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fl-rank-title {
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fl-rank-business {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fl-rank-stats {
+  text-align: right;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.fl-rank-clicks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.fl-rank-clicks.promo-label {
+  color: var(--primary);
+  background: var(--surface-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-ui);
+}
+
+.fl-rank-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 1px;
 }

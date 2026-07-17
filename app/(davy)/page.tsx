@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProducts, getServices, getBusinesses } from "@/lib/firestore/data-loader";
 import ProductCard from "@/components/shared/ProductCard";
 import ServiceCard from "@/components/shared/ServiceCard";
+import RankRow from "@/components/shared/RankRow";
 import { Icons } from "@/components/shared/Icons";
 
 export const revalidate = 60; // Revalidate every minute
@@ -22,7 +23,11 @@ export default async function Home() {
   const businessMap = new Map(businesses.map((b) => [b.business_id, b.business_name]));
   const getBusinessName = (id: string) => businessMap.get(id) || "UMKM Banjarsari";
 
-  // Sort and slice top items (PBI-01 and PBI-02) — by product_name alphabetically
+  // Featured items (default first items)
+  const featuredProducts = products.slice(0, 4);
+  const featuredServices = services.slice(0, 4);
+
+  // Sort and slice top items by views (PBI-05 and PBI-06)
   const topProducts = [...products]
     .sort((a, b) => a.product_name.localeCompare(b.product_name))
     .slice(0, 4);
@@ -170,6 +175,114 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* PBI-05 & PBI-06: SECTION MOST FAVORITE (Yang lagi naik) */}
+      <section className="section fl-fav-section">
+        <div className="container">
+          <div className="section-head">
+            <div>
+              <h2>Paling Sering Dilihat Warga</h2>
+              <p>Produk dan layanan jasa yang paling populer diakses warga Banjarsari.</p>
+            </div>
+          </div>
+          
+          <div className="fl-fav-grid">
+            {/* Column 1: Product Rankings (PBI-05) */}
+            <div className="fl-fav-col">
+              <div className="fl-fav-col-header product">
+                ★ Terpopuler · Produk
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {Array.from({ length: 4 }).map((_, index) => {
+                  const product = topProducts[index];
+                  if (product) {
+                    return (
+                      <RankRow
+                        key={product.id}
+                        rank={index + 1}
+                        item={product}
+                        type="product"
+                        businessName={getBusinessName(product.businessId)}
+                      />
+                    );
+                  }
+                  return (
+                    <a
+                      key={`promo-p-${index}`}
+                      href="https://wa.me/628123456789?text=Halo%20Karang%20Taruna%20Banjarsari,%20saya%20ingin%20mendaftarkan%20produk%20UMKM%20saya%20ke%20katalog..."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="fl-rank-row promo-card"
+                    >
+                      <div className="fl-rank-num promo-plus">+</div>
+                      <div className="fl-rank-thumb">
+                        <div className="fl-rank-placeholder">
+                          <span>📦</span>
+                        </div>
+                      </div>
+                      <div className="fl-rank-info">
+                        <h4 className="fl-rank-title">Punya Produk UMKM?</h4>
+                        <p className="fl-rank-business">Daftarkan gratis lewat Karang Taruna</p>
+                      </div>
+                      <div className="fl-rank-stats">
+                        <div className="fl-rank-clicks promo-label">Daftar</div>
+                        <div className="fl-rank-label">WA</div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Column 2: Service Rankings (PBI-06) */}
+            <div className="fl-fav-col">
+              <div className="fl-fav-col-header service">
+                ★ Terpopuler · Jasa
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {Array.from({ length: 4 }).map((_, index) => {
+                  const service = topServices[index];
+                  if (service) {
+                    return (
+                      <RankRow
+                        key={service.id}
+                        rank={index + 1}
+                        item={service}
+                        type="service"
+                        businessName={getBusinessName(service.businessId)}
+                      />
+                    );
+                  }
+                  return (
+                    <a
+                      key={`promo-s-${index}`}
+                      href="https://wa.me/628123456789?text=Halo%20Karang%20Taruna%20Banjarsari,%20saya%20ingin%20mendaftarkan%20layanan%20jasa%20saya%20ke%20katalog..."
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="fl-rank-row promo-card"
+                    >
+                      <div className="fl-rank-num promo-plus">+</div>
+                      <div className="fl-rank-thumb">
+                        <div className="fl-rank-placeholder">
+                          <span>🔧</span>
+                        </div>
+                      </div>
+                      <div className="fl-rank-info">
+                        <h4 className="fl-rank-title">Punya Layanan Jasa?</h4>
+                        <p className="fl-rank-business">Promosikan keahlian Anda di sini</p>
+                      </div>
+                      <div className="fl-rank-stats">
+                        <div className="fl-rank-clicks promo-label">Daftar</div>
+                        <div className="fl-rank-label">WA</div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PBI-01: SECTION PRODUK UMKM */}
       <section className="section" style={{ background: "var(--bg)" }}>
         <div className="container">
@@ -184,7 +297,7 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-products">
-            {topProducts.map((product) => (
+            {featuredProducts.map((product) => (
               <ProductCard
                 key={product.product_id}
                 product={product}
@@ -209,7 +322,7 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-products">
-            {topServices.map((service) => (
+            {featuredServices.map((service) => (
               <ServiceCard
                 key={service.service_id}
                 service={service}

@@ -18,6 +18,44 @@ interface CatalogContainerProps {
   initialCategory: string;
 }
 
+const ChevronDown = ({ open }: { open: boolean }) => (
+  <svg
+    width="14" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0 }}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const FilterGroup = ({
+  title,
+  count,
+  children,
+  defaultOpen = true,
+}: {
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="fl-filter-group">
+      <button className="fl-filter-group-header" onClick={() => setOpen((v) => !v)}>
+        <span className="fl-filter-group-title">
+          {title}
+          {count !== undefined && count > 0 && (
+            <span className="fl-filter-badge">{count}</span>
+          )}
+        </span>
+        <ChevronDown open={open} />
+      </button>
+      {open && <div className="fl-filter-group-body">{children}</div>}
+    </div>
+  );
+};
+
 const CatalogContainer = ({
   products,
   services,
@@ -32,47 +70,39 @@ const CatalogContainer = ({
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [activeArea, setActiveArea] = useState('');
-  const [sortBy, setSortBy] = useState<'price-asc' | 'price-desc' | 'name'>('name');
+  const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
-  // Build business map: business_id → business_name
   const businessMap = useMemo(
     () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
     [businesses]
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
-  // Build category map: category_id → category_name
-  const categoryMap = useMemo(
-    () => new Map(categories.map((c) => [c.category_id, c.category_name])),
-    [categories]
-  );
-  const getCategoryName = (id: string) => categoryMap.get(id) || id;
-
-  // Filter & sort products
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
-    if (searchQuery) list = list.filter(
-      (p) => p.product_name.toLowerCase().includes(searchQuery.toLowerCase())
-        || (p.product_description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    if (activeCategory) list = list.filter((p) => p.category === activeCategory);
+    if (searchQuery) list = list.filter((p) =>
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
-    else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
-    else list.sort((a, b) => a.product_name.localeCompare(b.product_name));
+    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
+    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else list.sort((a, b) => b.price - a.price);
     return list;
   }, [products, activeCategory, searchQuery, sortBy]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
-    if (searchQuery) list = list.filter(
-      (s) => s.service_name.toLowerCase().includes(searchQuery.toLowerCase())
-        || (s.service_description ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    if (activeCategory) list = list.filter((s) => s.category === activeCategory);
+    if (searchQuery) list = list.filter((s) =>
+      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
-    else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
-    else list.sort((a, b) => a.service_name.localeCompare(b.service_name));
+    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
+    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else list.sort((a, b) => b.price - a.price);
     return list;
   }, [services, activeCategory, searchQuery, sortBy]);
 
@@ -84,169 +114,429 @@ const CatalogContainer = ({
 
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
+  const activeFiltersCount = [activeCategory, searchQuery, activeArea].filter(Boolean).length;
+
+  const categoryMap = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.name])),
+    [categories]
+  );
+
+  const resetFilters = () => {
+    setActiveCategory('');
+    setSearchQuery('');
+    setActiveArea('');
+    setSortBy('popular');
+  };
 
   return (
-    <main style={{ background: 'var(--bg)', minHeight: '60vh' }}>
-      {/* Page Header */}
-      <section style={{ background: 'var(--white)', borderBottom: '1px solid var(--line)', padding: '32px 0 0' }}>
-        <div className="container">
-          <div className="label-eyebrow" style={{ marginBottom: 8 }}>Katalog UMKM</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--primary)', marginBottom: 20 }}>
+    <main className="fl-main">
+
+      {/* Hero Banner */}
+      <div className="fl-hero-banner">
+        <div className="fl-hero-text-outline">
+          {type === 'product' ? 'PRODUK UMKM' : 'LAYANAN JASA'}
+        </div>
+        <div className="fl-hero-text-solid">BANJARSARI</div>
+      </div>
+
+      {/* Breadcrumb */}
+      <div className="fl-breadcrumb-bar">
+        <div className="fl-container">
+          <nav className="fl-breadcrumb">
+            <span>Beranda</span>
+            <span className="fl-bc-sep">/</span>
+            <span>Katalog</span>
+            <span className="fl-bc-sep">/</span>
+            <span className="fl-bc-current">
+              {type === 'product' ? 'Produk UMKM' : 'Layanan Jasa'}
+            </span>
+          </nav>
+        </div>
+      </div>
+
+      {/* Page Title + Type Switcher */}
+      <div className="fl-container">
+        <div className="fl-page-head">
+          <h1 className="fl-page-title">
             {type === 'product' ? 'Produk UMKM Banjarsari' : 'Layanan Jasa Banjarsari'}
           </h1>
-
-          {/* Type Switcher */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <div className="fl-type-tabs">
             <button
               onClick={() => { setType('product'); setActiveCategory(''); }}
-              className={`chip ${type === 'product' ? 'active' : ''}`}
+              className={`fl-type-tab ${type === 'product' ? 'active' : ''}`}
             >
               Produk UMKM ({products.length})
             </button>
             <button
               onClick={() => { setType('service'); setActiveCategory(''); }}
-              className={`chip ${type === 'service' ? 'active' : ''}`}
+              className={`fl-type-tab ${type === 'service' ? 'active' : ''}`}
             >
               Layanan Jasa ({services.length})
             </button>
           </div>
-
-          {/* Category chips */}
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 16, scrollbarWidth: 'none', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setActiveCategory('')}
-              className={`chip ${activeCategory === '' ? 'tonal' : ''}`}
-            >
-              Semua
-            </button>
-            {visibleCategories.map((c) => (
-              <button
-                key={c.category_id}
-                onClick={() => setActiveCategory(activeCategory === c.category_id ? '' : c.category_id)}
-                className={`chip ${activeCategory === c.category_id ? 'tonal' : ''}`}
-              >
-                {c.icon} {c.category_name}
-              </button>
-            ))}
-          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Filters + Grid */}
-      <section className="section">
-        <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 32, alignItems: 'start' }}>
-            {/* Sidebar Filter */}
-            <aside className="sidebar" style={{ position: 'sticky', top: 80 }}>
-              <div className="filter-group">
-                <h4>Cari</h4>
-                <div style={{ position: 'relative' }}>
-                  <Icons.Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
-                  <input
-                    type="text"
-                    placeholder="Nama produk..."
-                    className="input"
-                    style={{ paddingLeft: 38 }}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
+      {/* Main Layout */}
+      <div className="fl-container">
+        <div className="fl-layout">
 
-              <div className="filter-group">
-                <h4>Urutkan</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {[
-                    { value: 'name',       label: 'Nama A–Z' },
-                    { value: 'price-asc',  label: 'Harga Terendah' },
-                    { value: 'price-desc', label: 'Harga Tertinggi' },
-                  ].map((opt) => (
-                    <label key={opt.value} className="check-row">
-                      <input
-                        type="radio"
-                        name="sortBy"
-                        value={opt.value}
-                        checked={sortBy === opt.value}
-                        onChange={() => setSortBy(opt.value as typeof sortBy)}
-                      />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {areas.length > 0 && (
-                <div className="filter-group">
-                  <h4>Area</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <label className="check-row">
-                      <input type="radio" name="area" value="" checked={activeArea === ''} onChange={() => setActiveArea('')} />
-                      Semua Area
-                    </label>
-                    {areas.map((area) => (
-                      <label key={area} className="check-row">
-                        <input type="radio" name="area" value={area} checked={activeArea === area} onChange={() => setActiveArea(area)} />
-                        {area}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+          {/* SIDEBAR */}
+          <aside className={`fl-sidebar ${mobileFilterOpen ? 'mobile-open' : ''}`}>
+            <div className="fl-sidebar-header">
+              <span className="fl-sidebar-title">Saring</span>
+              {activeFiltersCount > 0 && (
+                <button className="fl-clear-all" onClick={resetFilters}>
+                  Hapus Semua ({activeFiltersCount})
+                </button>
               )}
-            </aside>
+              <button className="fl-sidebar-close" onClick={() => setMobileFilterOpen(false)}>
+                <Icons.X />
+              </button>
+            </div>
 
-            {/* Product Grid */}
-            <div>
-              {/* Result count */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--primary)', opacity: 0.7 }}>
-                  Menampilkan <strong>{totalCount}</strong> hasil
-                  {activeCategory ? ` · ${getCategoryName(activeCategory)}` : ''}
-                  {searchQuery ? ` · "${searchQuery}"` : ''}
-                </div>
-                {(activeCategory || searchQuery) && (
-                  <button
-                    onClick={() => { setActiveCategory(''); setSearchQuery(''); }}
-                    style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--primary)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
-                  >
-                    Reset filter
-                  </button>
+            <FilterGroup title="Pencarian">
+              <div className="fl-search-wrap">
+                <Icons.Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#999', pointerEvents: 'none' }} />
+                <input
+                  id="fl-search"
+                  type="text"
+                  placeholder="Cari produk..."
+                  className="fl-search-input"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button className="fl-search-clear" onClick={() => setSearchQuery('')}>x</button>
                 )}
               </div>
+            </FilterGroup>
 
-              {totalCount === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--primary)', opacity: 0.5 }}>
-                  <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}>Tidak ada hasil ditemukan</div>
+            <FilterGroup title="Kategori">
+              <label className="fl-check-row">
+                <input
+                  type="checkbox"
+                  className="fl-checkbox"
+                  checked={activeCategory === ''}
+                  onChange={() => setActiveCategory('')}
+                  readOnly
+                />
+                <span className="fl-check-label">Semua</span>
+                <span className="fl-check-count">({currentItems.length})</span>
+              </label>
+              {visibleCategories.map((c) => (
+                <label key={c.id} className="fl-check-row">
+                  <input
+                    type="checkbox"
+                    className="fl-checkbox"
+                    checked={activeCategory === c.id}
+                    onChange={() => setActiveCategory(activeCategory === c.id ? '' : c.id)}
+                  />
+                  <span className="fl-check-label">{c.icon} {c.name}</span>
+                </label>
+              ))}
+            </FilterGroup>
+
+            {areas.length > 0 && (
+              <FilterGroup title="Area" count={activeArea ? 1 : 0}>
+                <label className="fl-check-row">
+                  <input
+                    type="checkbox"
+                    className="fl-checkbox"
+                    checked={activeArea === ''}
+                    onChange={() => setActiveArea('')}
+                    readOnly
+                  />
+                  <span className="fl-check-label">Semua Area</span>
+                </label>
+                {areas.map((area) => (
+                  <label key={area} className="fl-check-row">
+                    <input
+                      type="checkbox"
+                      className="fl-checkbox"
+                      checked={activeArea === area}
+                      onChange={() => setActiveArea(activeArea === area ? '' : area)}
+                    />
+                    <span className="fl-check-label">{area}</span>
+                  </label>
+                ))}
+              </FilterGroup>
+            )}
+          </aside>
+
+          {mobileFilterOpen && (
+            <div className="fl-sidebar-overlay" onClick={() => setMobileFilterOpen(false)} />
+          )}
+
+          {/* MAIN CONTENT */}
+          <div className="fl-content">
+            <div className="fl-toolbar">
+              <button className="fl-mobile-filter-btn" onClick={() => setMobileFilterOpen(true)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/>
+                </svg>
+                Saring
+                {activeFiltersCount > 0 && <span className="fl-filter-count-badge">{activeFiltersCount}</span>}
+              </button>
+
+              <div className="fl-result-count">
+                Menampilkan <strong>{totalCount}</strong> hasil pencarian
+              </div>
+
+              <div className="fl-sort-wrap">
+                <label className="fl-sort-label" htmlFor="fl-sort">Urutkan:</label>
+                <div className="fl-sort-select-wrap">
+                  <select
+                    id="fl-sort"
+                    className="fl-sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  >
+                    <option value="popular">Popularitas</option>
+                    <option value="price-asc">Harga: Terendah</option>
+                    <option value="price-desc">Harga: Tertinggi</option>
+                  </select>
+                  <svg className="fl-sort-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
-              ) : (
-                <div className="grid grid-products">
-                  {type === 'product'
-                    ? filteredProducts.map((p) => (
-                        <ProductCard
-                          key={p.product_id}
-                          product={p}
-                          businessName={getBusinessName(p.business_id)}
-                          categoryName={getCategoryName(p.category_id)}
-                        />
-                      ))
-                    : filteredServices.map((s) => (
-                        <ServiceCard
-                          key={s.service_id}
-                          service={s}
-                          businessName={getBusinessName(s.business_id)}
-                          categoryName={getCategoryName(s.category_id)}
-                        />
-                      ))}
-                </div>
-              )}
+              </div>
             </div>
+
+            {(activeCategory || activeArea || searchQuery) && (
+              <div className="fl-active-filters">
+                {activeCategory && (
+                  <button className="fl-pill" onClick={() => setActiveCategory('')}>
+                    {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
+                  </button>
+                )}
+                {activeArea && (
+                  <button className="fl-pill" onClick={() => setActiveArea('')}>
+                    {activeArea} <span>x</span>
+                  </button>
+                )}
+                {searchQuery && (
+                  <button className="fl-pill" onClick={() => setSearchQuery('')}>
+                    &quot;{searchQuery}&quot; <span>x</span>
+                  </button>
+                )}
+                <button className="fl-clear-pills" onClick={resetFilters}>Hapus Semua</button>
+              </div>
+            )}
+
+
+            {totalCount === 0 ? (
+              <div className="fl-empty">
+                <div className="fl-empty-icon">🔍</div>
+                <div className="fl-empty-title">Tidak ada hasil</div>
+                <div className="fl-empty-sub">Coba ubah filter atau kata kunci pencarian</div>
+                <button className="fl-empty-reset" onClick={resetFilters}>Reset Semua Filter</button>
+              </div>
+            ) : (
+              <div className="fl-grid">
+                {type === 'product'
+                  ? filteredProducts.map((p) => (
+                      <ProductCard key={p.id} product={p} businessName={getBusinessName(p.businessId)} />
+                    ))
+                  : filteredServices.map((s) => (
+                      <ServiceCard key={s.id} service={s} businessName={getBusinessName(s.businessId)} />
+                    ))}
+              </div>
+            )}
           </div>
         </div>
-      </section>
+      </div>
 
       <style>{`
-        @media (max-width: 768px) {
-          .catalog-layout { grid-template-columns: 1fr !important; }
+        .fl-main { background: #F5F5F5; min-height: 60vh; }
+        .fl-container { max-width: 1380px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .fl-hero-banner {
+          background: #05472B;
+          background-image:
+            repeating-linear-gradient(90deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px),
+            repeating-linear-gradient(0deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          padding: 48px 24px; gap: 0; overflow: hidden;
+        }
+        .fl-hero-text-outline {
+          font-family: var(--font-display);
+          font-size: clamp(40px, 8vw, 96px);
+          font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+          color: transparent; -webkit-text-stroke: 2px rgba(170, 220, 171, 0.6);
+          line-height: 1; text-align: center;
+        }
+        .fl-hero-text-solid {
+          font-family: var(--font-display);
+          font-size: clamp(24px, 4vw, 56px);
+          font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+          color: #AADCAB; line-height: 1.1; text-align: center;
+        }
+
+        /* Breadcrumb */
+        .fl-breadcrumb-bar { background: #fff; border-bottom: 1px solid #E5E5E5; padding: 10px 0; }
+        .fl-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #666; }
+        .fl-bc-sep { color: #CCC; }
+        .fl-bc-current { color: #111; font-weight: 600; }
+
+        /* Page head */
+        .fl-page-head {
+          padding: 20px 0 12px;
+          display: flex; align-items: flex-end; justify-content: space-between;
+          flex-wrap: wrap; gap: 12px;
+          border-bottom: 2px solid #111;
+        }
+        .fl-page-title {
+          font-family: var(--font-display);
+          font-size: clamp(18px, 2.5vw, 28px);
+          font-weight: 800; color: #111; letter-spacing: -0.01em;
+          text-transform: uppercase; margin: 0;
+        }
+        .fl-type-tabs { display: flex; border: 1.5px solid #111; overflow: hidden; }
+        .fl-type-tab {
+          padding: 8px 18px; font-size: 12.5px; font-weight: 700;
+          font-family: var(--font-ui); letter-spacing: 0.04em; text-transform: uppercase;
+          color: #111; background: #fff; border: none;
+          border-right: 1.5px solid #111; cursor: pointer; transition: all 0.15s;
+        }
+        .fl-type-tab:last-child { border-right: none; }
+        .fl-type-tab.active { background: #111; color: #fff; }
+        .fl-type-tab:hover:not(.active) { background: #F5F5F5; }
+
+        /* Layout */
+        .fl-layout {
+          display: grid; grid-template-columns: 240px 1fr;
+          gap: 0; align-items: start; padding: 20px 0 60px;
+        }
+
+        /* Sidebar */
+        .fl-sidebar {
+          position: sticky; top: 72px;
+          padding-right: 24px; padding-bottom: 40px;
+          border-right: 1px solid #E0E0E0;
+          max-height: calc(100vh - 90px);
+          overflow-y: auto;
+          scrollbar-width: thin; scrollbar-color: #CCC transparent;
+        }
+        .fl-sidebar-header {
+          display: flex; align-items: center; gap: 8px;
+          padding: 0 0 14px; border-bottom: 2px solid #111; margin-bottom: 0;
+        }
+        .fl-sidebar-title { font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #111; flex: 1; }
+        .fl-clear-all { font-size: 11px; font-weight: 600; color: var(--primary); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: var(--font-ui); }
+        .fl-sidebar-close { display: none; background: none; border: none; cursor: pointer; color: #111; padding: 2px; }
+
+        /* Filter Group */
+        .fl-filter-group { border-bottom: 1px solid #E5E5E5; }
+        .fl-filter-group-header {
+          width: 100%; display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 0; font-size: 12.5px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 0.06em; color: #111;
+          background: none; border: none; cursor: pointer; font-family: var(--font-ui); gap: 8px;
+        }
+        .fl-filter-group-title { display: flex; align-items: center; gap: 6px; }
+        .fl-filter-badge {
+          background: #111; color: #fff; border-radius: 10px;
+          padding: 1px 7px; font-size: 10px; font-weight: 700; letter-spacing: 0; text-transform: none;
+        }
+        .fl-filter-group-body { padding-bottom: 14px; display: flex; flex-direction: column; gap: 2px; }
+
+        /* Check row */
+        .fl-check-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 5px 4px; cursor: pointer; border-radius: 3px; transition: background 0.1s;
+        }
+        .fl-check-row:hover { background: #F0F0F0; }
+        .fl-checkbox { width: 16px; height: 16px; accent-color: #111; flex-shrink: 0; cursor: pointer; }
+        .fl-check-label { font-size: 13px; color: #222; font-family: var(--font-ui); flex: 1; }
+        .fl-check-count { font-size: 12px; color: #888; font-family: var(--font-mono); }
+
+        /* Sidebar search */
+        .fl-search-wrap { position: relative; }
+        .fl-search-input {
+          width: 100%; height: 38px; padding: 0 32px 0 34px;
+          border: 1.5px solid #CCC; border-radius: 0;
+          background: #fff; font-size: 13px; font-family: var(--font-ui);
+          color: #111; outline: none; transition: border-color 0.15s;
+        }
+        .fl-search-input:focus { border-color: #111; }
+        .fl-search-input::placeholder { color: #AAA; }
+        .fl-search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #999; font-size: 12px; padding: 4px; }
+
+        /* Content */
+        .fl-content { padding-left: 24px; }
+
+        /* Toolbar */
+        .fl-toolbar {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 0; border-bottom: 1px solid #E5E5E5;
+          margin-bottom: 8px; flex-wrap: wrap;
+        }
+        .fl-result-count { font-size: 13.5px; color: #444; font-family: var(--font-ui); flex: 1; }
+        .fl-result-count strong { font-weight: 800; color: #111; }
+        .fl-mobile-filter-btn {
+          display: none; align-items: center; gap: 6px; padding: 7px 14px;
+          font-size: 12.5px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 0.04em; font-family: var(--font-ui);
+          color: #fff; background: #111; border: none; cursor: pointer;
+        }
+        .fl-filter-count-badge { background: var(--primary); color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 10px; font-weight: 700; }
+
+        /* Sort */
+        .fl-sort-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .fl-sort-label { font-size: 12.5px; font-weight: 600; color: #555; white-space: nowrap; font-family: var(--font-ui); }
+        .fl-sort-select-wrap { position: relative; display: flex; align-items: center; }
+        .fl-sort-select {
+          appearance: none; -webkit-appearance: none;
+          padding: 7px 36px 7px 12px; font-size: 13px; font-weight: 600;
+          font-family: var(--font-ui); color: #111; background: #fff;
+          border: 1.5px solid #CCC; cursor: pointer; outline: none; transition: border-color 0.15s;
+        }
+        .fl-sort-select:focus, .fl-sort-select:hover { border-color: #111; }
+        .fl-sort-chevron { position: absolute; right: 10px; pointer-events: none; color: #555; }
+
+        /* Active filter pills */
+        .fl-active-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0 10px; }
+        .fl-pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 5px 12px; background: #111; color: #fff;
+          font-size: 12px; font-weight: 600; font-family: var(--font-ui);
+          border: none; cursor: pointer; transition: background 0.15s;
+        }
+        .fl-pill span { font-size: 10px; opacity: 0.7; }
+        .fl-pill:hover { background: #333; }
+        .fl-clear-pills { font-size: 12px; font-weight: 600; color: var(--primary); text-decoration: underline; background: none; border: none; cursor: pointer; font-family: var(--font-ui); }
+
+        /* Grid */
+        .fl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #E0E0E0; border: 1px solid #E0E0E0; }
+
+        /* Empty */
+        .fl-empty { text-align: center; padding: 80px 20px; }
+        .fl-empty-icon { font-size: 52px; margin-bottom: 16px; }
+        .fl-empty-title { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #111; font-family: var(--font-display); margin-bottom: 8px; }
+        .fl-empty-sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+        .fl-empty-reset { padding: 10px 24px; background: #111; color: #fff; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border: none; cursor: pointer; font-family: var(--font-ui); transition: background 0.15s; }
+        .fl-empty-reset:hover { background: #333; }
+
+        /* Responsive */
+        @media (max-width: 960px) {
+          .fl-layout { grid-template-columns: 1fr; }
+          .fl-sidebar {
+            position: fixed; top: 0; left: -290px; width: 290px; height: 100vh;
+            max-height: 100vh; z-index: 200; background: #fff; padding: 20px;
+            border-right: 2px solid #111; transition: left 0.25s ease; overflow-y: auto;
+          }
+          .fl-sidebar.mobile-open { left: 0; }
+          .fl-sidebar-close { display: block; }
+          .fl-sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
+          .fl-mobile-filter-btn { display: inline-flex; }
+          .fl-content { padding-left: 0; }
+          .fl-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 520px) {
+          .fl-grid { grid-template-columns: 1fr; }
+          .fl-page-head { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
     </main>
