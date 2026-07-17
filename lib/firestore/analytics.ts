@@ -7,6 +7,8 @@ import {
   onSnapshot,
   Timestamp,
   type Unsubscribe,
+  addDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -136,4 +138,35 @@ export async function fetchAnalyticsStats(): Promise<DashboardStats> {
     ...(doc.data() as Omit<AnalyticsEvent, 'id'>),
   }));
   return aggregateEvents(events);
+}
+
+/* ============================================================
+   Track a redirect / click event (PBI-13, PBI-14, PBI-15)
+   ============================================================ */
+export async function trackClickEvent(
+  type: ChannelClickType,
+  metadata: {
+    itemName?: string;
+    businessName?: string;
+    waNumber?: string;
+    marketplaceUrl?: string;
+    socialMedia?: string;
+  }
+): Promise<void> {
+  try {
+    const col = collection(db, ANALYTICS_COL);
+    await addDoc(col, {
+      Total_Visitors: 0,
+      Top_Clicked_Item: metadata.itemName || '',
+      Top_Business_Profile: metadata.businessName || '',
+      Channel_Click_Type: type,
+      timestamp: serverTimestamp(),
+      Click_Timestamp: serverTimestamp(), // PBI-13, 14, 15
+      WA_Number: metadata.waNumber || null,
+      Marketplace_URL: metadata.marketplaceUrl || null,
+      Media_Sosial: metadata.socialMedia || null,
+    });
+  } catch (error) {
+    console.error('[analytics] trackClickEvent error:', error);
+  }
 }
