@@ -1,19 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import type { Product, Service } from '@/lib/firestore/types';
+import type { ProdukItem, ServiceItem } from '@/lib/firestore/types';
 import { Icons } from './Icons';
 
 interface RankRowProps {
   rank: number;
-  item: Product | Service;
+  item: ProdukItem | ServiceItem;
   type: 'product' | 'service';
   businessName: string;
 }
 
 export default function RankRow({ rank, item, type, businessName }: RankRowProps) {
-  const href = type === 'product' ? `/produk/${item.id}` : `/layanan/${item.id}`;
-  const firstImage = item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls[0] : null;
+  const isProduct = type === 'product';
+  const produk = isProduct ? (item as ProdukItem) : null;
+  const jasa   = !isProduct ? (item as ServiceItem) : null;
+
+  const id           = isProduct ? produk!.product_id : jasa!.service_id;
+  const name         = isProduct ? produk!.product_name : jasa!.service_name;
+  const thumbnailUrl = item.thumbnail_url;
+  const categoryId   = item.category_id;
+  const href         = isProduct ? `/produk/${id}` : `/layanan/${id}`;
 
   return (
     <Link href={href} className="fl-rank-row">
@@ -22,27 +29,26 @@ export default function RankRow({ rank, item, type, businessName }: RankRowProps
       </div>
 
       <div className="fl-rank-thumb">
-        {firstImage ? (
+        {thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={firstImage} alt={item.name} className="fl-rank-img" />
+          <img src={thumbnailUrl} alt={name} className="fl-rank-img" />
         ) : (
           <div className="fl-rank-placeholder">
-            <span>{item.category ? item.category.substring(0, 2) : 'Pal'}</span>
+            <span>{categoryId ? categoryId.substring(0, 2) : 'Pal'}</span>
           </div>
         )}
       </div>
 
       <div className="fl-rank-info">
-        <h4 className="fl-rank-title">{item.name}</h4>
+        <h4 className="fl-rank-title">{name}</h4>
         <p className="fl-rank-business">{businessName}</p>
       </div>
 
       <div className="fl-rank-stats">
         <div className="fl-rank-clicks">
           <Icons.Flame style={{ color: 'var(--accent-y)', width: 12, height: 12 }} />
-          <span>{item.clickCount.toLocaleString('id-ID')}</span>
         </div>
-        <div className="fl-rank-label">klik</div>
+        <div className="fl-rank-label">Unggulan</div>
       </div>
     </Link>
   );

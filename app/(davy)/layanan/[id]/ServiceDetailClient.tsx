@@ -1,82 +1,73 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Service, Business } from '@/lib/firestore/types';
+import { useEffect } from 'react';
+import type { ServiceItem, Business } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import { incrementServiceClicks } from '@/lib/firestore/data-loader';
 import { trackClickEvent } from '@/lib/firestore/analytics';
 import { Icons } from '@/components/shared/Icons';
 import Link from 'next/link';
 
 interface ServiceDetailClientProps {
-  service: Service;
+  service: ServiceItem;
   business: Business | null;
 }
 
 export default function ServiceDetailClient({ service, business }: ServiceDetailClientProps) {
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
-
   // Auto-increment page views as analytics event
   useEffect(() => {
-    if (service.id) {
-      incrementServiceClicks(service.id);
+    if (service.service_id) {
+      incrementServiceClicks(service.service_id);
       trackClickEvent('view_item', {
-        itemName: service.name,
-        businessName: business?.name || 'UMKM Banjarsari',
+        itemName: service.service_name,
+        businessName: business?.business_name || 'UMKM Banjarsari',
       });
     }
-  }, [service.id, service.name, business?.name]);
+  }, [service.service_id, service.service_name, business?.business_name]);
 
-  const images = service.imageUrls && service.imageUrls.length > 0
-    ? service.imageUrls
-    : ['https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=800&auto=format&fit=crop&q=80'];
+  const priceDisplay = getServicePriceDisplay(service);
 
   const handleWhatsAppRedirect = async () => {
-    if (!business?.whatsapp) return;
+    const waNumber = service.whatsapp_number || business?.business_phone;
+    if (!waNumber) return;
 
-    // Log event and increment count
     await trackClickEvent('click_wa', {
-      itemName: service.name,
-      businessName: business.name,
-      waNumber: business.whatsapp,
+      itemName: service.service_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      waNumber,
     });
-    await incrementServiceClicks(service.id);
+    await incrementServiceClicks(service.service_id);
 
-    // Format WhatsApp text & redirect
-    const cleanNum = business.whatsapp.replace(/[^0-9]/g, '');
+    const cleanNum = waNumber.replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Halo Ibu/Bapak dari *${business.name}*, saya tertarik dengan layanan jasa *${service.name}* (${service.priceRange || 'Harga Nego'}) yang terdaftar di Katalog Banjarsari. Apakah tersedia untuk dipesan?`
+      `Halo Ibu/Bapak dari *${business?.business_name || 'UMKM Banjarsari'}*, saya tertarik dengan layanan jasa *${service.service_name}* (${priceDisplay}) yang terdaftar di Katalog Banjarsari. Apakah tersedia untuk dipesan?`
     );
     window.open(`https://wa.me/${cleanNum}?text=${text}`, '_blank');
   };
 
   const handleMarketplaceRedirect = async () => {
-    if (!service.Marketplace_URL) return;
+    const url = service.marketplace || business?.marketplace;
+    if (!url) return;
 
-    // Log event and increment count
     await trackClickEvent('click_marketplace', {
-      itemName: service.name,
-      businessName: business?.name || 'UMKM Banjarsari',
-      marketplaceUrl: service.Marketplace_URL,
+      itemName: service.service_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      marketplaceUrl: url,
     });
-    await incrementServiceClicks(service.id);
+    await incrementServiceClicks(service.service_id);
 
-    // Redirect
-    window.open(service.Marketplace_URL, '_blank');
+    window.open(url, '_blank');
   };
 
-  const handleSocialRedirect = async () => {
-    if (!business?.socialMediaUrl) return;
+  const waNumber = service.whatsapp_number || business?.business_phone;
+  const marketplaceUrl = service.marketplace || business?.marketplace;
 
-    // Log event (PBI-13: Redirect ke Sosmed)
-    const socialName = business.instagram ? `@${business.instagram}` : (business.facebook || 'Sosmed Toko');
-    await trackClickEvent('salin_link', {
-      itemName: service.name,
-      businessName: business.name,
-      socialMedia: socialName,
-    });
-
-    // Redirect
-    window.open(business.socialMediaUrl, '_blank');
+  // Map availability_type to label
+  const availabilityLabel: Record<ServiceItem['availability_type'], string> = {
+    ALWAYS_AVAILABLE: 'Tersedia',
+    BY_SCHEDULE: 'Sesuai Jadwal',
+    BY_REQUEST: 'Berdasarkan Permintaan',
+    TEMPORARILY_UNAVAILABLE: 'Sementara Tidak Tersedia',
   };
 
   return (
@@ -89,7 +80,7 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
           <span>/</span>
           <Link href="/katalog?type=service" style={{ textDecoration: 'underline' }}>Katalog Jasa</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-muted)' }}>{service.name}</span>
+          <span style={{ color: 'var(--text-muted)' }}>{service.service_name}</span>
         </nav>
 
         {/* Detail Container Grid */}
@@ -104,7 +95,7 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
           border: '1px solid var(--line)'
         }} className="detail-grid">
 
-          {/* LEFT COLUMN: Placeholder display */}
+          {/* LEFT COLUMN: Image / Placeholder */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               aspectRatio: '4/3',
@@ -117,19 +108,28 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.95)',
-                padding: '24px 32px',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow)',
-                textAlign: 'center',
-                border: '1px solid var(--line)'
-              }}>
-                <div style={{ fontSize: 64, marginBottom: 12 }}>🔧</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--primary)' }}>
-                  Jasa · {service.category}
+              {service.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={service.thumbnail_url}
+                  alt={service.service_name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  padding: '24px 32px',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow)',
+                  textAlign: 'center',
+                  border: '1px solid var(--line)'
+                }}>
+                  <div style={{ fontSize: 64, marginBottom: 12 }}>🔧</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--primary)' }}>
+                    Jasa · {service.category_id}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -140,25 +140,11 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                 Layanan Jasa Warga Banjarsari
               </div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, margin: '0 0 12px', lineHeight: 1.2, color: 'var(--primary)' }}>
-                {service.name}
+                {service.service_name}
               </h1>
 
-              {/* Service Badges (PBI-12 Availability, Type, Negotiability) */}
+              {/* Service Badges */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-
-                {/* Service Type Badge */}
-                <span style={{
-                  fontSize: 12,
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: 600,
-                  padding: '4px 12px',
-                  borderRadius: 999,
-                  background: service.Service_Type === 'Panggilan' ? 'var(--surface-3)' : 'var(--surface-2)',
-                  color: 'var(--primary)',
-                  border: '1px solid var(--line-strong)'
-                }}>
-                  📍 Layanan: {service.Service_Type || 'Panggilan'}
-                </span>
 
                 {/* Availability Badge */}
                 <span style={{
@@ -167,11 +153,11 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: 999,
-                  background: service.Availability_Type === 'Tersedia' ? 'rgba(37, 211, 102, 0.15)' : 'rgba(235, 87, 87, 0.15)',
-                  color: service.Availability_Type === 'Tersedia' ? '#1faa54' : '#eb5757',
+                  background: service.availability_type === 'ALWAYS_AVAILABLE' ? 'rgba(37, 211, 102, 0.15)' : 'rgba(235, 87, 87, 0.15)',
+                  color: service.availability_type === 'ALWAYS_AVAILABLE' ? '#1faa54' : '#eb5757',
                   border: '1px solid currentColor'
                 }}>
-                  ⚡ Status: {service.Availability_Type || 'Tersedia'}
+                  ⚡ Status: {availabilityLabel[service.availability_type]}
                 </span>
 
                 {/* Negotiable Badge */}
@@ -181,22 +167,18 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                   fontWeight: 600,
                   padding: '4px 12px',
                   borderRadius: 999,
-                  background: service.Is_Negotiable ? 'rgba(205, 255, 0, 0.15)' : 'rgba(1, 48, 32, 0.05)',
-                  color: service.Is_Negotiable ? 'var(--primary)' : 'var(--text-muted)',
+                  background: service.is_negotiable ? 'rgba(205, 255, 0, 0.15)' : 'rgba(1, 48, 32, 0.05)',
+                  color: service.is_negotiable ? 'var(--primary)' : 'var(--text-muted)',
                   border: '1px solid var(--line-strong)'
                 }}>
-                  {service.Is_Negotiable ? '🤝 Bisa Nego' : '🏷️ Harga Pas'}
+                  {service.is_negotiable ? '🤝 Bisa Nego' : '🏷️ Harga Pas'}
                 </span>
 
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color: 'var(--primary)' }}>
-                  {service.priceRange || `Rp ${service.price.toLocaleString('id-ID')}`}
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'var(--font-mono)', background: 'var(--surface-2)', padding: '4px 10px', borderRadius: 999 }}>
-                  <Icons.Flame style={{ color: 'var(--accent-y)' }} />
-                  {service.clickCount + 1} Klik diakses
+                  {priceDisplay}
                 </div>
               </div>
             </div>
@@ -209,7 +191,7 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                 Deskripsi Layanan
               </h3>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-line', opacity: 0.9 }}>
-                {service.description}
+                {service.service_description || 'Tidak ada deskripsi.'}
               </p>
             </div>
 
@@ -237,19 +219,23 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                   fontSize: 22,
                   fontWeight: 700
                 }}>
-                  {business.name.charAt(0)}
+                  {business.business_name.charAt(0)}
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>PENYEDIA JASA</div>
                   <h4 style={{ margin: '2px 0 4px', fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>
-                    {business.name}
+                    {business.business_name}
                   </h4>
                   <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    <span>Pemilik: <strong>{business.owner}</strong></span>
-                    <span>•</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Icons.MapPin /> {business.area}
-                    </span>
+                    {business.owner_name && <span>Pemilik: <strong>{business.owner_name}</strong></span>}
+                    {business.area_name && (
+                      <>
+                        <span>•</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Icons.MapPin /> {business.area_name}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -257,10 +243,10 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
 
             {/* CTA Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: service.Marketplace_URL ? '1fr 1fr' : '1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr' : '1fr', gap: 12 }}>
 
                 {/* WA button */}
-                {business?.whatsapp && (
+                {waNumber && (
                   <button
                     onClick={handleWhatsAppRedirect}
                     className="btn btn-wa btn-lg"
@@ -271,7 +257,7 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                 )}
 
                 {/* Marketplace button */}
-                {service.Marketplace_URL && (
+                {marketplaceUrl && (
                   <button
                     onClick={handleMarketplaceRedirect}
                     className="btn btn-primary btn-lg"
@@ -282,17 +268,6 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                 )}
 
               </div>
-
-              {/* Social Media Redirect (PBI-13) */}
-              {business?.socialMediaUrl && (
-                <button
-                  onClick={handleSocialRedirect}
-                  className="btn btn-secondary"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                >
-                  <Icons.Instagram /> Kunjungi Sosial Media Penjual ({business.instagram ? `@${business.instagram}` : 'Sosmed'})
-                </button>
-              )}
             </div>
 
           </div>

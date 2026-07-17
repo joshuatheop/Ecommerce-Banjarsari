@@ -27,7 +27,7 @@ export default async function Home() {
   const featuredProducts = products.slice(0, 4);
   const featuredServices = services.slice(0, 4);
 
-  // Sort and slice top items by views (PBI-05 and PBI-06)
+  // Sort and slice top items by name (PBI-05 and PBI-06)
   const topProducts = [...products]
     .sort((a, b) => a.product_name.localeCompare(b.product_name))
     .slice(0, 4);
@@ -197,11 +197,11 @@ export default async function Home() {
                   if (product) {
                     return (
                       <RankRow
-                        key={product.id}
+                        key={product.product_id}
                         rank={index + 1}
                         item={product}
                         type="product"
-                        businessName={getBusinessName(product.businessId)}
+                        businessName={getBusinessName(product.business_id)}
                       />
                     );
                   }
@@ -244,11 +244,11 @@ export default async function Home() {
                   if (service) {
                     return (
                       <RankRow
-                        key={service.id}
+                        key={service.service_id}
                         rank={index + 1}
                         item={service}
                         type="service"
-                        businessName={getBusinessName(service.businessId)}
+                        businessName={getBusinessName(service.business_id)}
                       />
                     );
                   }

@@ -1,34 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Product, Business } from '@/lib/firestore/types';
+import { useEffect } from 'react';
+import type { ProdukItem, Business } from '@/lib/firestore/types';
 import { incrementProductClicks } from '@/lib/firestore/data-loader';
 import { trackClickEvent } from '@/lib/firestore/analytics';
 import { Icons } from '@/components/shared/Icons';
 import Link from 'next/link';
 
 interface ProductDetailClientProps {
-  product: Product;
+  product: ProdukItem;
   business: Business | null;
 }
 
 export default function ProductDetailClient({ product, business }: ProductDetailClientProps) {
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
-
   // Auto-increment page views as analytics event
   useEffect(() => {
-    if (product.id) {
-      incrementProductClicks(product.id);
+    if (product.product_id) {
+      incrementProductClicks(product.product_id);
       trackClickEvent('view_item', {
-        itemName: product.name,
-        businessName: business?.name || 'UMKM Banjarsari',
+        itemName: product.product_name,
+        businessName: business?.business_name || 'UMKM Banjarsari',
       });
     }
-  }, [product.id, product.name, business?.name]);
-
-  const images = product.imageUrls && product.imageUrls.length > 0
-    ? product.imageUrls
-    : ['https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&auto=format&fit=crop&q=80'];
+  }, [product.product_id, product.product_name, business?.business_name]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -38,53 +32,39 @@ export default function ProductDetailClient({ product, business }: ProductDetail
     }).format(price);
 
   const handleWhatsAppRedirect = async () => {
-    if (!business?.whatsapp) return;
+    const waNumber = product.whatsapp_number || business?.business_phone;
+    if (!waNumber) return;
 
-    // Log event and increment count
     await trackClickEvent('click_wa', {
-      itemName: product.name,
-      businessName: business.name,
-      waNumber: business.whatsapp,
+      itemName: product.product_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      waNumber,
     });
-    await incrementProductClicks(product.id);
+    await incrementProductClicks(product.product_id);
 
-    // Format WhatsApp text & redirect
-    const cleanNum = business.whatsapp.replace(/[^0-9]/g, '');
+    const cleanNum = waNumber.replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Halo Ibu/Bapak dari *${business.name}*, saya tertarik dengan produk *${product.name}* (harga: ${formatPrice(product.price)}) yang terdaftar di Katalog Banjarsari. Apakah produk ini tersedia?`
+      `Halo Ibu/Bapak dari *${business?.business_name || 'UMKM Banjarsari'}*, saya tertarik dengan produk *${product.product_name}* (harga: ${formatPrice(product.product_price)}) yang terdaftar di Katalog Banjarsari. Apakah produk ini tersedia?`
     );
     window.open(`https://wa.me/${cleanNum}?text=${text}`, '_blank');
   };
 
   const handleMarketplaceRedirect = async () => {
-    if (!product.Marketplace_URL) return;
+    const url = product.marketplace || business?.marketplace;
+    if (!url) return;
 
-    // Log event and increment count
     await trackClickEvent('click_marketplace', {
-      itemName: product.name,
-      businessName: business?.name || 'UMKM Banjarsari',
-      marketplaceUrl: product.Marketplace_URL,
+      itemName: product.product_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      marketplaceUrl: url,
     });
-    await incrementProductClicks(product.id);
+    await incrementProductClicks(product.product_id);
 
-    // Redirect
-    window.open(product.Marketplace_URL, '_blank');
+    window.open(url, '_blank');
   };
 
-  const handleSocialRedirect = async () => {
-    if (!business?.socialMediaUrl) return;
-
-    // Log event (PBI-13: Redirect ke Sosmed)
-    const socialName = business.instagram ? `@${business.instagram}` : (business.facebook || 'Sosmed Toko');
-    await trackClickEvent('salin_link', {
-      itemName: product.name,
-      businessName: business.name,
-      socialMedia: socialName,
-    });
-
-    // Redirect
-    window.open(business.socialMediaUrl, '_blank');
-  };
+  const waNumber = product.whatsapp_number || business?.business_phone;
+  const marketplaceUrl = product.marketplace || business?.marketplace;
 
   return (
     <div style={{ background: 'var(--bg)', padding: '40px 0 80px' }}>
@@ -96,7 +76,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
           <span>/</span>
           <Link href="/katalog?type=product" style={{ textDecoration: 'underline' }}>Katalog Produk</Link>
           <span>/</span>
-          <span style={{ color: 'var(--text-muted)' }}>{product.name}</span>
+          <span style={{ color: 'var(--text-muted)' }}>{product.product_name}</span>
         </nav>
 
         {/* Detail Container Grid */}
@@ -111,7 +91,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
           border: '1px solid var(--line)'
         }} className="detail-grid">
 
-          {/* LEFT COLUMN: Placeholder display */}
+          {/* LEFT COLUMN: Image / Placeholder */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               aspectRatio: '4/3',
@@ -124,19 +104,28 @@ export default function ProductDetailClient({ product, business }: ProductDetail
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.95)',
-                padding: '24px 32px',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow)',
-                textAlign: 'center',
-                border: '1px solid var(--line)'
-              }}>
-                <div style={{ fontSize: 64, marginBottom: 12 }}>📦</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--primary)' }}>
-                  {product.category}
+              {product.thumbnail_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={product.thumbnail_url}
+                  alt={product.product_name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  padding: '24px 32px',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow)',
+                  textAlign: 'center',
+                  border: '1px solid var(--line)'
+                }}>
+                  <div style={{ fontSize: 64, marginBottom: 12 }}>📦</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--primary)' }}>
+                    {product.category_id}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -147,16 +136,12 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                 Produk UMKM Kelurahan Banjarsari
               </div>
               <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, margin: '0 0 12px', lineHeight: 1.2, color: 'var(--primary)' }}>
-                {product.name}
+                {product.product_name}
               </h1>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: 'var(--primary)' }}>
-                  {formatPrice(product.price)}
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'var(--font-mono)', background: 'var(--surface-2)', padding: '4px 10px', borderRadius: 999 }}>
-                  <Icons.Flame style={{ color: 'var(--accent-y)' }} />
-                  {product.clickCount + 1} Klik diakses
+                  {formatPrice(product.product_price)}
                 </div>
               </div>
             </div>
@@ -169,7 +154,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                 Deskripsi Produk
               </h3>
               <p style={{ fontSize: 15, lineHeight: 1.6, color: 'var(--text-primary)', whiteSpace: 'pre-line', opacity: 0.9 }}>
-                {product.description}
+                {product.product_description || 'Tidak ada deskripsi.'}
               </p>
             </div>
 
@@ -197,19 +182,23 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                   fontSize: 22,
                   fontWeight: 700
                 }}>
-                  {business.name.charAt(0)}
+                  {business.business_name.charAt(0)}
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>PENJUAL UMKM</div>
                   <h4 style={{ margin: '2px 0 4px', fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>
-                    {business.name}
+                    {business.business_name}
                   </h4>
                   <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    <span>Pemilik: <strong>{business.owner}</strong></span>
-                    <span>•</span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      <Icons.MapPin /> {business.area}
-                    </span>
+                    {business.owner_name && <span>Pemilik: <strong>{business.owner_name}</strong></span>}
+                    {business.area_name && (
+                      <>
+                        <span>•</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Icons.MapPin /> {business.area_name}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -217,10 +206,10 @@ export default function ProductDetailClient({ product, business }: ProductDetail
 
             {/* CTA Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: product.Marketplace_URL ? '1fr 1fr' : '1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr' : '1fr', gap: 12 }}>
 
                 {/* WA button */}
-                {business?.whatsapp && (
+                {waNumber && (
                   <button
                     onClick={handleWhatsAppRedirect}
                     className="btn btn-wa btn-lg"
@@ -231,7 +220,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                 )}
 
                 {/* Marketplace button */}
-                {product.Marketplace_URL && (
+                {marketplaceUrl && (
                   <button
                     onClick={handleMarketplaceRedirect}
                     className="btn btn-primary btn-lg"
@@ -242,17 +231,6 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                 )}
 
               </div>
-
-              {/* Social Media Redirect (PBI-13) */}
-              {business?.socialMediaUrl && (
-                <button
-                  onClick={handleSocialRedirect}
-                  className="btn btn-secondary"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                >
-                  <Icons.Instagram /> Kunjungi Sosial Media Penjual ({business.instagram ? `@${business.instagram}` : 'Sosmed'})
-                </button>
-              )}
             </div>
 
           </div>

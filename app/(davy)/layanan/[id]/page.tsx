@@ -16,7 +16,7 @@ export default async function ServiceDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const business = await getBusiness(service.businessId);
+  const business = await getBusiness(service.business_id);
 
   return <ServiceDetailClient service={service} business={business} />;
 }

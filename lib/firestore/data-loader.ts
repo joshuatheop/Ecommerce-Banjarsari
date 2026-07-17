@@ -1,113 +1,91 @@
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  doc,
+  getDoc,
+  updateDoc,
+  increment,
+  Timestamp,
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { ProdukItem, ServiceItem, Business, Category } from './types';
 import { mockProducts, mockServices, mockBusinesses, mockCategories } from './mock-data';
 
 // ============================================================
-// Helper: convert Firestore doc → typed objects
+// Helper: convert Firestore Timestamp / raw value → Date
 // ============================================================
 
-function toDate(val: any): Date {
+function toDate(val: unknown): Date {
   if (!val) return new Date();
-  if (typeof val.toDate === 'function') return val.toDate();
-  if (val.seconds !== undefined) return new Date(val.seconds * 1000);
-  return new Date(val);
+  if (val instanceof Timestamp) return val.toDate();
+  if (typeof (val as { toDate?: () => Date }).toDate === 'function')
+    return (val as { toDate: () => Date }).toDate();
+  if (typeof val === 'object' && (val as { seconds?: number }).seconds !== undefined)
+    return new Date((val as { seconds: number }).seconds * 1000);
+  return new Date(val as string | number);
 }
 
-function toProduct(id: string, data: Record<string, unknown>): Product {
-  const name = (data.product_name as string) || '';
-  const description = (data.product_description as string) || '';
-  const price = (data.product_price as number) || 0;
-  const category = (data.category_id as string) || '';
-  const imageUrls = (data.thumbnail_url as string) ? [data.thumbnail_url as string] : [];
+// ============================================================
+// Helper: Firestore doc → ProdukItem
+// ============================================================
 
+function toProdukItem(id: string, data: Record<string, unknown>): ProdukItem {
   return {
-    id,
-    name,
-    description,
-    price,
-    category,
-    businessId: (data.business_id as string) || '',
-    imageUrls,
-    status: data.is_active === false ? 'nonaktif' : 'aktif',
-    clickCount: (data.clickCount as number) || 0,
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
-
-    // PBI-11 fields (fallback/aliases)
-    Gallery_Images: imageUrls,
-    Product_Name: name,
-    Full_Description: description,
-    Product_Price: price,
-    Related_Product_Category_ID: category,
-    Marketplace_URL: (data.marketplace as string) || '',
+    product_id:         id,
+    business_id:        (data.business_id as string) || '',
+    category_id:        (data.category_id as string) || '',
+    product_name:       (data.product_name as string) || '',
+    product_description:(data.product_description as string) ?? null,
+    product_price:      (data.product_price as number) || 0,
+    slug:               (data.slug as string) || '',
+    whatsapp_number:    (data.whatsapp_number as string) ?? null,
+    marketplace:        (data.marketplace as string) ?? null,
+    media_sosial:       (data.media_sosial as string) ?? null,
+    thumbnail_url:      (data.thumbnail_url as string) ?? null,
+    is_active:          (data.is_active as boolean) ?? true,
+    createdAt:          toDate(data.createdAt),
+    updatedAt:          toDate(data.updatedAt),
+    deletedAt:          data.deletedAt ? toDate(data.deletedAt) : null,
   };
 }
 
-function toService(id: string, data: Record<string, unknown>): Service {
-  const name = (data.service_name as string) || '';
-  const description = (data.service_description as string) || '';
-  const imageUrls = (data.thumbnail_url as string) ? [data.thumbnail_url as string] : [];
-  const minPrice = (data.minimum_price as number) || 0;
-  const maxPrice = (data.maximum_price as number) || 0;
-  const priceType = (data.price_type as string) || 'FIXED';
+// ============================================================
+// Helper: Firestore doc → ServiceItem
+// ============================================================
 
-  const priceRange = priceType === 'RANGE'
-    ? `Rp ${minPrice.toLocaleString('id-ID')} – Rp ${maxPrice.toLocaleString('id-ID')}`
-    : `Rp ${minPrice.toLocaleString('id-ID')}`;
-
+function toServiceItem(id: string, data: Record<string, unknown>): ServiceItem {
   return {
-    id,
-    name,
-    description,
-    priceRange,
-    price: minPrice,
-    category: (data.category_id as string) || '',
-    businessId: (data.business_id as string) || '',
-    imageUrls,
-    status: data.is_active === false ? 'nonaktif' : 'aktif',
-    clickCount: (data.clickCount as number) || 0,
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
-
-    // PBI-12 fields (fallback/aliases)
-    Gallery_Images: imageUrls,
-    Service_Name: name,
-    Full_Description: description,
-    Is_Negotiable: data.is_negotiable !== undefined ? (data.is_negotiable as boolean) : true,
-    Availability_Type: (data.availability_type as string) || 'Tersedia',
-    Service_Type: priceType === 'RANGE' ? 'Panggilan' : 'On-Site',
-    Marketplace_URL: (data.marketplace as string) || '',
+    service_id:          id,
+    business_id:         (data.business_id as string) || '',
+    category_id:         (data.category_id as string) || '',
+    service_name:        (data.service_name as string) || '',
+    service_description: (data.service_description as string) ?? null,
+    minimum_price:       (data.minimum_price as number) ?? null,
+    maximum_price:       (data.maximum_price as number) ?? null,
+    price_type:          (data.price_type as ServiceItem['price_type']) || 'CONTACT_PROVIDER',
+    is_negotiable:       (data.is_negotiable as boolean) ?? false,
+    whatsapp_number:     (data.whatsapp_number as string) ?? null,
+    marketplace:         (data.marketplace as string) ?? null,
+    availability_type:   (data.availability_type as ServiceItem['availability_type']) || 'ALWAYS_AVAILABLE',
+    slug:                (data.slug as string) || '',
+    thumbnail_url:       (data.thumbnail_url as string) ?? null,
+    is_active:           (data.is_active as boolean) ?? true,
+    createdAt:           toDate(data.createdAt),
+    updatedAt:           toDate(data.updatedAt),
+    deletedAt:           data.deletedAt ? toDate(data.deletedAt) : null,
   };
 }
+
+// ============================================================
+// Helper: Firestore doc → Business
+// ============================================================
 
 function toBusiness(id: string, data: Record<string, unknown>): Business {
-  const name = (data.business_name as string) || '';
-  const owner = (data.owner_name as string) || '';
-  const description = (data.business_description as string) || '';
-  const address = (data.business_address as string) || '';
-  const area = (data.area_name as string) || 'Banjarsari';
-  const whatsapp = (data.business_phone as string) || (data.whatsapp_number as string) || '';
-  const imageUrl = (data.business_logo_url as string) || '';
-
   return {
-    id,
-    name,
-    owner,
-    description,
-    category: '',
-    address,
-    area,
-    whatsapp,
-    imageUrl,
-    status: data.is_active === false ? 'nonaktif' : 'aktif',
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
-
-    // PBI-13 fields (fallback/aliases)
-    instagram: (data.instagram_url as string) || '',
-    facebook: (data.facebook_url as string) || '',
-    socialMediaUrl: (data.instagram_url as string) || (data.facebook_url as string) || '',
     business_id:          id,
     business_logo_url:    (data.business_logo_url as string) ?? null,
     business_name:        (data.business_name as string) || '',
@@ -121,16 +99,17 @@ function toBusiness(id: string, data: Record<string, unknown>): Business {
     longitude:            (data.longitude as number) ?? null,
     owner_name:           (data.owner_name as string) ?? null,
     is_active:            (data.is_active as boolean) ?? true,
-    createdAt:            data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    updatedAt:            data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    deletedAt:            data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,
+    createdAt:            toDate(data.createdAt),
+    updatedAt:            toDate(data.updatedAt),
+    deletedAt:            data.deletedAt ? toDate(data.deletedAt) : null,
   };
 }
 
-function toCategory(id: string, data: Record<string, unknown>): Category {
-  const catType = (data.category_type as string) || 'PRODUCT';
-  const type = catType === 'PRODUCT' ? 'product' : catType === 'SERVICE' ? 'service' : 'both';
+// ============================================================
+// Helper: Firestore doc → Category
+// ============================================================
 
+function toCategory(id: string, data: Record<string, unknown>): Category {
   return {
     category_id:   id,
     category_name: (data.category_name as string) || '',
@@ -138,9 +117,9 @@ function toCategory(id: string, data: Record<string, unknown>): Category {
     slug:          (data.slug as string) || '',
     icon:          (data.icon as string) ?? null,
     is_active:     (data.is_active as boolean) ?? true,
-    createdAt:     data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    updatedAt:     data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-    deletedAt:     data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,
+    createdAt:     toDate(data.createdAt),
+    updatedAt:     toDate(data.updatedAt),
+    deletedAt:     data.deletedAt ? toDate(data.deletedAt) : null,
   };
 }
 
@@ -158,7 +137,7 @@ export async function getProducts(): Promise<ProdukItem[]> {
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockProducts;
-    return snap.docs.map((doc) => toProdukItem(doc.id, doc.data() as Record<string, unknown>));
+    return snap.docs.map((d) => toProdukItem(d.id, d.data() as Record<string, unknown>));
   } catch {
     return mockProducts;
   }
@@ -174,7 +153,7 @@ export async function getServices(): Promise<ServiceItem[]> {
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockServices;
-    return snap.docs.map((doc) => toServiceItem(doc.id, doc.data() as Record<string, unknown>));
+    return snap.docs.map((d) => toServiceItem(d.id, d.data() as Record<string, unknown>));
   } catch {
     return mockServices;
   }
@@ -189,7 +168,7 @@ export async function getBusinesses(): Promise<Business[]> {
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockBusinesses;
-    return snap.docs.map((doc) => toBusiness(doc.id, doc.data() as Record<string, unknown>));
+    return snap.docs.map((d) => toBusiness(d.id, d.data() as Record<string, unknown>));
   } catch (error) {
     console.error('Error fetching businesses:', error);
     return mockBusinesses;
@@ -202,41 +181,37 @@ export async function getCategories(): Promise<Category[]> {
       query(collection(db, 'kategori'), where('is_active', '==', true))
     );
     if (snap.empty) return mockCategories;
-    return snap.docs.map((doc) => toCategory(doc.id, doc.data() as Record<string, unknown>));
+    return snap.docs.map((d) => toCategory(d.id, d.data() as Record<string, unknown>));
   } catch (error) {
     console.error('Error fetching categories:', error);
     return mockCategories;
   }
 }
 
-export async function getProduct(id: string): Promise<Product | null> {
+export async function getProduct(id: string): Promise<ProdukItem | null> {
   try {
     const docRef = doc(db, 'produk', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return toProduct(docSnap.id, docSnap.data() as Record<string, unknown>);
+      return toProdukItem(docSnap.id, docSnap.data() as Record<string, unknown>);
     }
   } catch (error) {
     console.error('Error fetching product from Firestore:', error);
   }
-  // Fallback to mock data
-  const mock = mockProducts.find((p) => p.id === id);
-  return mock ? toProduct(mock.id, mock as unknown as Record<string, unknown>) : null;
+  return mockProducts.find((p) => p.product_id === id) ?? null;
 }
 
-export async function getService(id: string): Promise<Service | null> {
+export async function getService(id: string): Promise<ServiceItem | null> {
   try {
     const docRef = doc(db, 'jasa', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return toService(docSnap.id, docSnap.data() as Record<string, unknown>);
+      return toServiceItem(docSnap.id, docSnap.data() as Record<string, unknown>);
     }
   } catch (error) {
     console.error('Error fetching service from Firestore:', error);
   }
-  // Fallback to mock data
-  const mock = mockServices.find((s) => s.id === id);
-  return mock ? toService(mock.id, mock as unknown as Record<string, unknown>) : null;
+  return mockServices.find((s) => s.service_id === id) ?? null;
 }
 
 export async function getBusiness(id: string): Promise<Business | null> {
@@ -249,9 +224,7 @@ export async function getBusiness(id: string): Promise<Business | null> {
   } catch (error) {
     console.error('Error fetching business from Firestore:', error);
   }
-  // Fallback to mock data
-  const mock = mockBusinesses.find((b) => b.id === id);
-  return mock ? toBusiness(mock.id, mock as unknown as Record<string, unknown>) : null;
+  return mockBusinesses.find((b) => b.business_id === id) ?? null;
 }
 
 export async function incrementProductClicks(id: string): Promise<void> {
@@ -260,7 +233,7 @@ export async function incrementProductClicks(id: string): Promise<void> {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       await updateDoc(docRef, {
-        clickCount: increment(1)
+        clickCount: increment(1),
       });
     }
   } catch (error) {
@@ -274,11 +247,10 @@ export async function incrementServiceClicks(id: string): Promise<void> {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       await updateDoc(docRef, {
-        clickCount: increment(1)
+        clickCount: increment(1),
       });
     }
   } catch (error) {
     console.error('Error incrementing service clicks:', error);
   }
 }
-

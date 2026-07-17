@@ -81,28 +81,28 @@ const CatalogContainer = ({
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category === activeCategory);
+    if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
     if (searchQuery) list = list.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase())
+      p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.product_description || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
-    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
-    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
-    else list.sort((a, b) => b.price - a.price);
+    if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
+    else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
+    // 'popular' → default order from Firestore (already sorted by createdAt desc)
     return list;
   }, [products, activeCategory, searchQuery, sortBy]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category === activeCategory);
+    if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
     if (searchQuery) list = list.filter((s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase())
+      s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.service_description || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
-    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
-    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
-    else list.sort((a, b) => b.price - a.price);
+    if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
+    else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
+    // 'popular' → default order from Firestore
     return list;
   }, [services, activeCategory, searchQuery, sortBy]);
 
@@ -117,7 +117,7 @@ const CatalogContainer = ({
   const activeFiltersCount = [activeCategory, searchQuery, activeArea].filter(Boolean).length;
 
   const categoryMap = useMemo(
-    () => new Map(categories.map((c) => [c.id, c.name])),
+    () => new Map(categories.map((c) => [c.category_id, c.category_name])),
     [categories]
   );
 
@@ -225,14 +225,14 @@ const CatalogContainer = ({
                 <span className="fl-check-count">({currentItems.length})</span>
               </label>
               {visibleCategories.map((c) => (
-                <label key={c.id} className="fl-check-row">
+                <label key={c.category_id} className="fl-check-row">
                   <input
                     type="checkbox"
                     className="fl-checkbox"
-                    checked={activeCategory === c.id}
-                    onChange={() => setActiveCategory(activeCategory === c.id ? '' : c.id)}
+                    checked={activeCategory === c.category_id}
+                    onChange={() => setActiveCategory(activeCategory === c.category_id ? '' : c.category_id)}
                   />
-                  <span className="fl-check-label">{c.icon} {c.name}</span>
+                  <span className="fl-check-label">{c.icon} {c.category_name}</span>
                 </label>
               ))}
             </FilterGroup>
@@ -336,10 +336,10 @@ const CatalogContainer = ({
               <div className="fl-grid">
                 {type === 'product'
                   ? filteredProducts.map((p) => (
-                      <ProductCard key={p.id} product={p} businessName={getBusinessName(p.businessId)} />
+                      <ProductCard key={p.product_id} product={p} businessName={getBusinessName(p.business_id)} />
                     ))
                   : filteredServices.map((s) => (
-                      <ServiceCard key={s.id} service={s} businessName={getBusinessName(s.businessId)} />
+                      <ServiceCard key={s.service_id} service={s} businessName={getBusinessName(s.business_id)} />
                     ))}
               </div>
             )}

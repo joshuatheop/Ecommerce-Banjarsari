@@ -16,7 +16,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const business = await getBusiness(product.businessId);
+  const business = await getBusiness(product.business_id);
 
   return <ProductDetailClient product={product} business={business} />;
 }
