@@ -11,91 +11,99 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { AnalyticsEvent, EventType } from './types';
+
+export type { AnalyticsEvent, EventType };
 
 /* ============================================================
-   Tipe data koleksi `analytics`
+   Aggregated result types untuk Dashboard
    ============================================================ */
-export interface AnalyticsEvent {
-  id:                    string;
-  Total_Visitors:        number;          // PBI-18
-  Top_Clicked_Item:      string;          // PBI-19
-  Top_Business_Profile:  string;          // PBI-19
-  Channel_Click_Type:    ChannelClickType; // PBI-20
-  timestamp:             Timestamp | null;
-}
-
-export type ChannelClickType =
-  | 'click_wa'
-  | 'click_marketplace'
-  | 'salin_link'
-  | 'view_item'
-  | 'view_business';
-
-/* ---- Aggregated result types ---- */
 export interface DashboardStats {
-  totalVisitors:      number;
-  topItems:           { name: string; count: number }[];
-  topBusinesses:      { name: string; count: number }[];
-  channelCounts:      Record<ChannelClickType, number>;
-  recentEvents:       AnalyticsEvent[];
+  totalSessions:    number;                       // unique visitor sessions
+  totalEvents:      number;                       // total event count
+  topProducts:      { name: string; count: number }[];
+  topBusinesses:    { name: string; count: number }[];
+  eventTypeCounts:  Record<EventType, number>;
+  recentEvents:     AnalyticsEvent[];
 }
 
-const ANALYTICS_COL = 'analytics';
+const ANALYTICS_COL = 'analytics_events';
+
+/* ============================================================
+   Helper: parse Firestore doc → AnalyticsEvent
+   ============================================================ */
+function toAnalyticsEvent(id: string, data: Record<string, unknown>): AnalyticsEvent {
+  return {
+    event_id:        id,
+    session_id:      (data.session_id as string) || '',
+    business_id:     (data.business_id as string) || null,
+    product_id:      (data.product_id as string) || null,
+    service_id:      (data.service_id as string) || null,
+    event_type:      (data.event_type as EventType) || 'PRODUCT_VIEW',
+    destination_url: (data.destination_url as string) || null,
+    createdAt:       data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+  };
+}
 
 /* ============================================================
    Helper: aggregate events → DashboardStats
    ============================================================ */
 function aggregateEvents(events: AnalyticsEvent[]): DashboardStats {
-  // PBI-18: Total_Visitors
-  const totalVisitors = events.reduce((sum, e) => sum + (e.Total_Visitors ?? 0), 0);
+  // Total unique sessions
+  const totalSessions = new Set(events.map((e) => e.session_id)).size;
+  const totalEvents   = events.length;
 
-  // PBI-19: Top_Clicked_Item
-  const itemCount: Record<string, number> = {};
+  // Event type counts
+  const eventTypeCounts: Record<EventType, number> = {
+    BUSINESS_VIEW:     0,
+    PRODUCT_VIEW:      0,
+    SERVICE_VIEW:      0,
+    WHATSAPP_CLICK:    0,
+    MARKETPLACE_CLICK: 0,
+    SHARE_CLICK:       0,
+  };
+
+  // Top products (by PRODUCT_VIEW count)
+  const productCount: Record<string, number> = {};
+  const productNames: Record<string, string> = {};
+
+  // Top businesses (by BUSINESS_VIEW + WHATSAPP_CLICK count)
+  const bizCount: Record<string, number> = {};
+  const bizNames:  Record<string, string> = {};
+
   for (const e of events) {
-    if (e.Top_Clicked_Item) {
-      itemCount[e.Top_Clicked_Item] = (itemCount[e.Top_Clicked_Item] ?? 0) + 1;
+    if (e.event_type in eventTypeCounts) {
+      eventTypeCounts[e.event_type]++;
+    }
+
+    if ((e.event_type === 'PRODUCT_VIEW' || e.event_type === 'SERVICE_VIEW') && e.product_id) {
+      productCount[e.product_id] = (productCount[e.product_id] ?? 0) + 1;
+      if (e.destination_url) productNames[e.product_id] = e.destination_url;
+    }
+
+    if ((e.event_type === 'BUSINESS_VIEW' || e.event_type === 'WHATSAPP_CLICK') && e.business_id) {
+      bizCount[e.business_id] = (bizCount[e.business_id] ?? 0) + 1;
+      if (e.destination_url) bizNames[e.business_id] = e.destination_url;
     }
   }
-  const topItems = Object.entries(itemCount)
+
+  const topProducts = Object.entries(productCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
-    .map(([name, count]) => ({ name, count }));
+    .map(([id, count]) => ({ name: productNames[id] || id, count }));
 
-  // PBI-19: Top_Business_Profile
-  const bizCount: Record<string, number> = {};
-  for (const e of events) {
-    if (e.Top_Business_Profile) {
-      bizCount[e.Top_Business_Profile] = (bizCount[e.Top_Business_Profile] ?? 0) + 1;
-    }
-  }
   const topBusinesses = Object.entries(bizCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([name, count]) => ({ name, count }));
+    .map(([id, count]) => ({ name: bizNames[id] || id, count }));
 
-  // PBI-20: Channel_Click_Type
-  const channelCounts: Record<ChannelClickType, number> = {
-    click_wa:           0,
-    click_marketplace:  0,
-    salin_link:         0,
-    view_item:          0,
-    view_business:      0,
-  };
-  for (const e of events) {
-    if (e.Channel_Click_Type && e.Channel_Click_Type in channelCounts) {
-      channelCounts[e.Channel_Click_Type]++;
-    }
-  }
-
-  // Recent events (already ordered by timestamp desc from query)
   const recentEvents = events.slice(0, 10);
 
-  return { totalVisitors, topItems, topBusinesses, channelCounts, recentEvents };
+  return { totalSessions, totalEvents, topProducts, topBusinesses, eventTypeCounts, recentEvents };
 }
 
 /* ============================================================
-   Subscribe realtime ke koleksi analytics
-   Memanggil callback setiap ada perubahan data
+   Subscribe realtime ke koleksi analytics_events
    ============================================================ */
 export function subscribeAnalytics(
   callback: (stats: DashboardStats) => void,
@@ -103,40 +111,38 @@ export function subscribeAnalytics(
 ): Unsubscribe {
   const q = query(
     collection(db, ANALYTICS_COL),
-    orderBy('timestamp', 'desc'),
-    limit(200), // ambil 200 event terbaru untuk agregasi
+    orderBy('createdAt', 'desc'),
+    limit(200),
   );
 
   return onSnapshot(
     q,
     (snapshot) => {
-      const events: AnalyticsEvent[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<AnalyticsEvent, 'id'>),
-      }));
+      const events: AnalyticsEvent[] = snapshot.docs.map((doc) =>
+        toAnalyticsEvent(doc.id, doc.data() as Record<string, unknown>)
+      );
       callback(aggregateEvents(events));
     },
     (err) => {
-      console.error('[analytics] snapshot error:', err);
+      console.error('[analytics_events] snapshot error:', err);
       onError?.(err);
     },
   );
 }
 
 /* ============================================================
-   One-shot fetch (non-realtime, untuk keperluan export dll)
+   One-shot fetch
    ============================================================ */
 export async function fetchAnalyticsStats(): Promise<DashboardStats> {
   const q = query(
     collection(db, ANALYTICS_COL),
-    orderBy('timestamp', 'desc'),
+    orderBy('createdAt', 'desc'),
     limit(200),
   );
   const snapshot = await getDocs(q);
-  const events: AnalyticsEvent[] = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(doc.data() as Omit<AnalyticsEvent, 'id'>),
-  }));
+  const events: AnalyticsEvent[] = snapshot.docs.map((doc) =>
+    toAnalyticsEvent(doc.id, doc.data() as Record<string, unknown>)
+  );
   return aggregateEvents(events);
 }
 

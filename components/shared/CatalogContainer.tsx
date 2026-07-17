@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Product, Service, Business, Category } from '@/lib/firestore/types';
+import type { ProdukItem, ServiceItem, Business, Category } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import ProductCard from './ProductCard';
 import ServiceCard from './ServiceCard';
 import { Icons } from './Icons';
 
 interface CatalogContainerProps {
-  products: Product[];
-  services: Service[];
+  products: ProdukItem[];
+  services: ServiceItem[];
   businesses: Business[];
   categories: Category[];
   areas: string[];
@@ -73,7 +74,7 @@ const CatalogContainer = ({
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const businessMap = useMemo(
-    () => new Map(businesses.map((b) => [b.id, b.name])),
+    () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
     [businesses]
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
@@ -91,6 +92,7 @@ const CatalogContainer = ({
     return list;
   }, [products, activeCategory, searchQuery, sortBy]);
 
+  // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
     if (activeCategory) list = list.filter((s) => s.category === activeCategory);
@@ -104,8 +106,9 @@ const CatalogContainer = ({
     return list;
   }, [services, activeCategory, searchQuery, sortBy]);
 
+  // Categories visible for current type
   const visibleCategories = useMemo(
-    () => categories.filter((c) => c.type === type || c.type === 'both'),
+    () => categories.filter((c) => c.category_type === (type === 'product' ? 'PRODUCT' : 'SERVICE')),
     [categories, type]
   );
 

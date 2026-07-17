@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import type { Service } from '@/lib/firestore/types';
+import type { ServiceItem } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import { Icons } from './Icons';
 
 interface ServiceCardProps {
-  service: Service;
+  service: ServiceItem;
   businessName: string;
+  categoryName?: string;
 }
 
 const formatPrice = (price: number) => {

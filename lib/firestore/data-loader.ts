@@ -1,10 +1,10 @@
 import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Product, Service, Business, Category } from './types';
+import type { ProdukItem, ServiceItem, Business, Category } from './types';
 import { mockProducts, mockServices, mockBusinesses, mockCategories } from './mock-data';
 
 // ============================================================
-// Helper: convert Firestore doc to typed object
+// Helper: convert Firestore doc → typed objects
 // ============================================================
 
 function toDate(val: any): Date {
@@ -108,6 +108,22 @@ function toBusiness(id: string, data: Record<string, unknown>): Business {
     instagram: (data.instagram_url as string) || '',
     facebook: (data.facebook_url as string) || '',
     socialMediaUrl: (data.instagram_url as string) || (data.facebook_url as string) || '',
+    business_id:          id,
+    business_logo_url:    (data.business_logo_url as string) ?? null,
+    business_name:        (data.business_name as string) || '',
+    business_description: (data.business_description as string) ?? null,
+    business_address:     (data.business_address as string) ?? null,
+    business_phone:       (data.business_phone as string) ?? null,
+    slug:                 (data.slug as string) || '',
+    marketplace:          (data.marketplace as string) ?? null,
+    area_name:            (data.area_name as string) ?? null,
+    latitude:             (data.latitude as number) ?? null,
+    longitude:            (data.longitude as number) ?? null,
+    owner_name:           (data.owner_name as string) ?? null,
+    is_active:            (data.is_active as boolean) ?? true,
+    createdAt:            data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    updatedAt:            data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+    deletedAt:            data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,
   };
 }
 
@@ -116,11 +132,15 @@ function toCategory(id: string, data: Record<string, unknown>): Category {
   const type = catType === 'PRODUCT' ? 'product' : catType === 'SERVICE' ? 'service' : 'both';
 
   return {
-    id,
-    name: (data.category_name as string) || '',
-    slug: (data.slug as string) || '',
-    icon: (data.icon as string) || '',
-    type,
+    category_id:   id,
+    category_name: (data.category_name as string) || '',
+    category_type: (data.category_type as Category['category_type']) || 'PRODUCT',
+    slug:          (data.slug as string) || '',
+    icon:          (data.icon as string) ?? null,
+    is_active:     (data.is_active as boolean) ?? true,
+    createdAt:     data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    updatedAt:     data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+    deletedAt:     data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,
   };
 }
 
@@ -128,34 +148,34 @@ function toCategory(id: string, data: Record<string, unknown>): Category {
 // Fetch functions — gracefully fall back to mock data
 // ============================================================
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(): Promise<ProdukItem[]> {
   try {
     const q = query(
       collection(db, 'produk'),
       where('is_active', '==', true),
-      limit(50)
+      orderBy('createdAt', 'desc'),
+      limit(50),
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockProducts;
-    return snap.docs.map((doc) => toProduct(doc.id, doc.data() as Record<string, unknown>));
-  } catch (error) {
-    console.error('Error fetching products:', error);
+    return snap.docs.map((doc) => toProdukItem(doc.id, doc.data() as Record<string, unknown>));
+  } catch {
     return mockProducts;
   }
 }
 
-export async function getServices(): Promise<Service[]> {
+export async function getServices(): Promise<ServiceItem[]> {
   try {
     const q = query(
       collection(db, 'jasa'),
       where('is_active', '==', true),
-      limit(50)
+      orderBy('createdAt', 'desc'),
+      limit(50),
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockServices;
-    return snap.docs.map((doc) => toService(doc.id, doc.data() as Record<string, unknown>));
-  } catch (error) {
-    console.error('Error fetching services:', error);
+    return snap.docs.map((doc) => toServiceItem(doc.id, doc.data() as Record<string, unknown>));
+  } catch {
     return mockServices;
   }
 }
@@ -164,7 +184,8 @@ export async function getBusinesses(): Promise<Business[]> {
   try {
     const q = query(
       collection(db, 'bisnis'),
-      where('is_active', '==', true)
+      where('is_active', '==', true),
+      orderBy('business_name', 'asc'),
     );
     const snap = await getDocs(q);
     if (snap.empty) return mockBusinesses;
@@ -177,7 +198,9 @@ export async function getBusinesses(): Promise<Business[]> {
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const snap = await getDocs(collection(db, 'kategori'));
+    const snap = await getDocs(
+      query(collection(db, 'kategori'), where('is_active', '==', true))
+    );
     if (snap.empty) return mockCategories;
     return snap.docs.map((doc) => toCategory(doc.id, doc.data() as Record<string, unknown>));
   } catch (error) {

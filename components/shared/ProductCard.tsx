@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import type { Product } from '@/lib/firestore/types';
+import type { ProdukItem } from '@/lib/firestore/types';
 import { Icons } from './Icons';
 
 interface ProductCardProps {
-  product: Product;
+  product: ProdukItem;
   businessName: string;
+  categoryName?: string;
 }
 
 const formatPrice = (price: number) => {
@@ -15,7 +16,9 @@ const formatPrice = (price: number) => {
 };
 
 
-const ProductCard = ({ product, businessName }: ProductCardProps) => {
+const ProductCard = ({ product, businessName, categoryName }: ProductCardProps) => {
+  const displayCategory = categoryName || product.category_id;
+
   return (
     <Link href={`/produk/${product.id}`} className="fl-card">
       {/* Thumbnail */}
