@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getProducts, getServices, getBusinesses } from "@/lib/firestore/data-loader";
+import { getProducts, getServices, getBusinesses, getCategories } from "@/lib/firestore/data-loader";
 import ProductCard from "@/components/shared/ProductCard";
 import ServiceCard from "@/components/shared/ServiceCard";
 import RankRow from "@/components/shared/RankRow";
@@ -8,16 +8,18 @@ import { Icons } from "@/components/shared/Icons";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [rawProducts, rawServices, rawBusinesses] = await Promise.all([
+  const [rawProducts, rawServices, rawBusinesses, rawCategories] = await Promise.all([
     getProducts(),
     getServices(),
     getBusinesses(),
+    getCategories(),
   ]);
 
   // Guard: ensure arrays even if Firebase returns undefined unexpectedly
-  const products   = rawProducts  ?? [];
-  const services   = rawServices  ?? [];
+  const products   = rawProducts   ?? [];
+  const services   = rawServices   ?? [];
   const businesses = rawBusinesses ?? [];
+  const categories = rawCategories ?? [];
 
   // Map business_id to business_name for quick lookups
   const businessMap = new Map(businesses.map((b) => [b.business_id, b.business_name]));
@@ -35,15 +37,6 @@ export default async function Home() {
   const topServices = [...services]
     .sort((a, b) => a.service_name.localeCompare(b.service_name))
     .slice(0, 4);
-
-  // Quick categories
-  const quickCategories = [
-    { name: "Makanan & Minuman", icon: "🍚", categoryId: "1", type: "product" },
-    { name: "Kerajinan Tangan",  icon: "🧺", categoryId: "2", type: "product" },
-    { name: "Camilan",           icon: "🥨", categoryId: "3", type: "product" },
-    { name: "Jasa Reparasi",     icon: "🔧", categoryId: "5", type: "service" },
-    { name: "Kecantikan",        icon: "💇", categoryId: "6", type: "service" },
-  ];
 
   return (
     <main>
@@ -146,31 +139,34 @@ export default async function Home() {
         <div className="container">
           <div className="label-eyebrow" style={{ marginBottom: 16 }}>Kategori Pilihan</div>
           <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
-            {quickCategories.map((c) => (
-              <Link
-                key={c.name}
-                href={`/katalog?type=${c.type}&category=${c.categoryId}`}
-                style={{
-                  background: "var(--surface)", border: "1px solid var(--line)",
-                  borderRadius: 14, padding: "16px 20px",
-                  display: "flex", alignItems: "center", gap: 14,
-                  minWidth: 240, cursor: "pointer", textAlign: "left",
-                  transition: "all 0.2s"
-                }}
-                className="card"
-              >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, background: "var(--surface-2)",
-                  display: "grid", placeItems: "center", fontSize: 22,
-                }}>{c.icon}</div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--primary)" }}>{c.name}</div>
-                  <div className="mono" style={{ fontSize: 11, color: "var(--primary)", opacity: 0.6, marginTop: 2 }}>
-                    Jelajahi &rarr;
+            {categories.map((c) => {
+              const catType = (c.category_type || "PRODUCT").toLowerCase() === "service" ? "service" : "product";
+              return (
+                <Link
+                  key={c.category_id}
+                  href={`/katalog?type=${catType}&category=${c.category_id}`}
+                  style={{
+                    background: "var(--surface)", border: "1px solid var(--line)",
+                    borderRadius: 14, padding: "16px 20px",
+                    display: "flex", alignItems: "center", gap: 14,
+                    minWidth: 240, cursor: "pointer", textAlign: "left",
+                    transition: "all 0.2s"
+                  }}
+                  className="card"
+                >
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12, background: "var(--surface-2)",
+                    display: "grid", placeItems: "center", fontSize: 22,
+                  }}>{c.icon || "📁"}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--primary)" }}>{c.category_name}</div>
+                    <div className="mono" style={{ fontSize: 11, color: "var(--primary)", opacity: 0.6, marginTop: 2 }}>
+                      Jelajahi &rarr;
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
