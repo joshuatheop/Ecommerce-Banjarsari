@@ -2,7 +2,7 @@ import { getProducts, getServices, getBusinesses, getCategories } from "@/lib/fi
 import { mockAreas } from "@/lib/firestore/mock-data";
 import CatalogContainer from "@/components/shared/CatalogContainer";
 
-export const revalidate = 60; // Cache for 60 seconds
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   searchParams: Promise<{

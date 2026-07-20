@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ProdukItem, ServiceItem, Business, Category } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
 import ProductCard from './ProductCard';
@@ -66,10 +67,22 @@ const CatalogContainer = ({
   initialQuery,
   initialCategory,
 }: CatalogContainerProps) => {
+  const router = useRouter();
   const [type, setType] = useState<'product' | 'service'>(initialType);
+
+  useEffect(() => {
+    setType(initialType);
+  }, [initialType]);
+
+  const handleSwitchType = (newType: 'product' | 'service') => {
+    setType(newType);
+    setActiveCategory('');
+    router.replace(`/katalog?type=${newType}`, { scroll: false });
+  };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [activeArea, setActiveArea] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -86,11 +99,19 @@ const CatalogContainer = ({
       p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.product_description || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
+    if (minPrice !== '') {
+      const min = Number(minPrice);
+      if (!isNaN(min)) list = list.filter((p) => p.product_price >= min);
+    }
+    if (maxPrice !== '') {
+      const max = Number(maxPrice);
+      if (!isNaN(max)) list = list.filter((p) => p.product_price <= max);
+    }
+
     if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
     else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
-    // 'popular' → default order from Firestore (already sorted by createdAt desc)
     return list;
-  }, [products, activeCategory, searchQuery, sortBy]);
+  }, [products, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
@@ -100,21 +121,34 @@ const CatalogContainer = ({
       s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.service_description || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
+    if (minPrice !== '') {
+      const min = Number(minPrice);
+      if (!isNaN(min)) list = list.filter((s) => (s.minimum_price ?? 0) >= min);
+    }
+    if (maxPrice !== '') {
+      const max = Number(maxPrice);
+      if (!isNaN(max)) list = list.filter((s) => (s.minimum_price ?? 0) <= max);
+    }
+
     if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
     else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
-    // 'popular' → default order from Firestore
     return list;
-  }, [services, activeCategory, searchQuery, sortBy]);
+  }, [services, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
 
   // Categories visible for current type
   const visibleCategories = useMemo(
-    () => categories.filter((c) => c.category_type === (type === 'product' ? 'PRODUCT' : 'SERVICE')),
+    () => categories.filter((c) => {
+      const cType = (c.category_type || '').toUpperCase();
+      const targetType = type === 'product' ? 'PRODUCT' : 'SERVICE';
+      return cType === targetType;
+    }),
     [categories, type]
   );
 
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
-  const activeFiltersCount = [activeCategory, searchQuery, activeArea].filter(Boolean).length;
+  const hasPriceFilter = minPrice !== '' || maxPrice !== '';
+  const activeFiltersCount = [activeCategory, searchQuery, hasPriceFilter ? 'price' : ''].filter(Boolean).length;
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.category_id, c.category_name])),
@@ -124,7 +158,8 @@ const CatalogContainer = ({
   const resetFilters = () => {
     setActiveCategory('');
     setSearchQuery('');
-    setActiveArea('');
+    setMinPrice('');
+    setMaxPrice('');
     setSortBy('popular');
   };
 
@@ -162,13 +197,13 @@ const CatalogContainer = ({
           </h1>
           <div className="fl-type-tabs">
             <button
-              onClick={() => { setType('product'); setActiveCategory(''); }}
+              onClick={() => handleSwitchType('product')}
               className={`fl-type-tab ${type === 'product' ? 'active' : ''}`}
             >
               Produk UMKM ({products.length})
             </button>
             <button
-              onClick={() => { setType('service'); setActiveCategory(''); }}
+              onClick={() => handleSwitchType('service')}
               className={`fl-type-tab ${type === 'service' ? 'active' : ''}`}
             >
               Layanan Jasa ({services.length})
@@ -237,31 +272,41 @@ const CatalogContainer = ({
               ))}
             </FilterGroup>
 
-            {areas.length > 0 && (
-              <FilterGroup title="Area" count={activeArea ? 1 : 0}>
-                <label className="fl-check-row">
+            <FilterGroup title="Rentang Harga" count={hasPriceFilter ? 1 : 0}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
-                    type="checkbox"
-                    className="fl-checkbox"
-                    checked={activeArea === ''}
-                    onChange={() => setActiveArea('')}
-                    readOnly
+                    id="fl-min-price"
+                    type="number"
+                    placeholder="Min Rp"
+                    className="fl-search-input"
+                    style={{ paddingLeft: 12, fontSize: 13 }}
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
                   />
-                  <span className="fl-check-label">Semua Area</span>
-                </label>
-                {areas.map((area) => (
-                  <label key={area} className="fl-check-row">
-                    <input
-                      type="checkbox"
-                      className="fl-checkbox"
-                      checked={activeArea === area}
-                      onChange={() => setActiveArea(activeArea === area ? '' : area)}
-                    />
-                    <span className="fl-check-label">{area}</span>
-                  </label>
-                ))}
-              </FilterGroup>
-            )}
+                  <span style={{ fontSize: 12, color: '#888' }}>-</span>
+                  <input
+                    id="fl-max-price"
+                    type="number"
+                    placeholder="Max Rp"
+                    className="fl-search-input"
+                    style={{ paddingLeft: 12, fontSize: 13 }}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                  />
+                </div>
+                {hasPriceFilter && (
+                  <button
+                    type="button"
+                    className="fl-clear-all"
+                    style={{ alignSelf: 'flex-start', marginTop: 2 }}
+                    onClick={() => { setMinPrice(''); setMaxPrice(''); }}
+                  >
+                    Hapus Rentang Harga
+                  </button>
+                )}
+              </div>
+            </FilterGroup>
           </aside>
 
           {mobileFilterOpen && (
@@ -292,9 +337,9 @@ const CatalogContainer = ({
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
                   >
-                    <option value="popular">Popularitas</option>
-                    <option value="price-asc">Harga: Terendah</option>
-                    <option value="price-desc">Harga: Tertinggi</option>
+                    <option value="popular">Popularitas (Default)</option>
+                    <option value="price-asc">Harga: Termurah (Ascending)</option>
+                    <option value="price-desc">Harga: Termahal (Descending)</option>
                   </select>
                   <svg className="fl-sort-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9" />
@@ -303,16 +348,16 @@ const CatalogContainer = ({
               </div>
             </div>
 
-            {(activeCategory || activeArea || searchQuery) && (
+            {(activeCategory || hasPriceFilter || searchQuery) && (
               <div className="fl-active-filters">
                 {activeCategory && (
                   <button className="fl-pill" onClick={() => setActiveCategory('')}>
                     {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
                   </button>
                 )}
-                {activeArea && (
-                  <button className="fl-pill" onClick={() => setActiveArea('')}>
-                    {activeArea} <span>x</span>
+                {hasPriceFilter && (
+                  <button className="fl-pill" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>
+                    Rp {minPrice ? Number(minPrice).toLocaleString('id-ID') : '0'} - {maxPrice ? `Rp ${Number(maxPrice).toLocaleString('id-ID')}` : 'Tak Terbatas'} <span>x</span>
                   </button>
                 )}
                 {searchQuery && (
@@ -336,10 +381,20 @@ const CatalogContainer = ({
               <div className="fl-grid">
                 {type === 'product'
                   ? filteredProducts.map((p) => (
-                      <ProductCard key={p.product_id} product={p} businessName={getBusinessName(p.business_id)} />
+                      <ProductCard
+                        key={p.product_id}
+                        product={p}
+                        businessName={getBusinessName(p.business_id)}
+                        categoryName={categoryMap.get(p.category_id)}
+                      />
                     ))
                   : filteredServices.map((s) => (
-                      <ServiceCard key={s.service_id} service={s} businessName={getBusinessName(s.business_id)} />
+                      <ServiceCard
+                        key={s.service_id}
+                        service={s}
+                        businessName={getBusinessName(s.business_id)}
+                        categoryName={categoryMap.get(s.category_id)}
+                      />
                     ))}
               </div>
             )}

@@ -129,46 +129,49 @@ function toCategory(id: string, data: Record<string, unknown>): Category {
 
 export async function getProducts(): Promise<ProdukItem[]> {
   try {
-    const q = query(
-      collection(db, 'produk'),
-      where('is_active', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(50),
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) return mockProducts;
-    return snap.docs.map((d) => toProdukItem(d.id, d.data() as Record<string, unknown>));
-  } catch {
+    const snap = await getDocs(collection(db, 'produk'));
+    const realItems = snap.docs
+      .map((d) => toProdukItem(d.id, d.data() as Record<string, unknown>))
+      .filter((item) => item.is_active !== false && !item.deletedAt);
+
+    realItems.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+
+    if (realItems.length > 0) return realItems;
+    return mockProducts;
+  } catch (error) {
+    console.error('Error fetching products:', error);
     return mockProducts;
   }
 }
 
 export async function getServices(): Promise<ServiceItem[]> {
   try {
-    const q = query(
-      collection(db, 'jasa'),
-      where('is_active', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(50),
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) return mockServices;
-    return snap.docs.map((d) => toServiceItem(d.id, d.data() as Record<string, unknown>));
-  } catch {
+    const snap = await getDocs(collection(db, 'jasa'));
+    const realItems = snap.docs
+      .map((d) => toServiceItem(d.id, d.data() as Record<string, unknown>))
+      .filter((item) => item.is_active !== false && !item.deletedAt);
+
+    realItems.sort((a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0));
+
+    if (realItems.length > 0) return realItems;
+    return mockServices;
+  } catch (error) {
+    console.error('Error fetching services:', error);
     return mockServices;
   }
 }
 
 export async function getBusinesses(): Promise<Business[]> {
   try {
-    const q = query(
-      collection(db, 'bisnis'),
-      where('is_active', '==', true),
-      orderBy('business_name', 'asc'),
-    );
-    const snap = await getDocs(q);
-    if (snap.empty) return mockBusinesses;
-    return snap.docs.map((d) => toBusiness(d.id, d.data() as Record<string, unknown>));
+    const snap = await getDocs(collection(db, 'bisnis'));
+    const realItems = snap.docs
+      .map((d) => toBusiness(d.id, d.data() as Record<string, unknown>))
+      .filter((item) => item.is_active !== false && !item.deletedAt);
+
+    realItems.sort((a, b) => a.business_name.localeCompare(b.business_name));
+
+    if (realItems.length > 0) return realItems;
+    return mockBusinesses;
   } catch (error) {
     console.error('Error fetching businesses:', error);
     return mockBusinesses;
@@ -177,11 +180,13 @@ export async function getBusinesses(): Promise<Business[]> {
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const snap = await getDocs(
-      query(collection(db, 'kategori'), where('is_active', '==', true))
-    );
-    if (snap.empty) return mockCategories;
-    return snap.docs.map((d) => toCategory(d.id, d.data() as Record<string, unknown>));
+    const snap = await getDocs(collection(db, 'kategori'));
+    const realItems = snap.docs
+      .map((d) => toCategory(d.id, d.data() as Record<string, unknown>))
+      .filter((item) => item.is_active !== false && !item.deletedAt);
+
+    if (realItems.length > 0) return realItems;
+    return mockCategories;
   } catch (error) {
     console.error('Error fetching categories:', error);
     return mockCategories;
@@ -193,7 +198,8 @@ export async function getProduct(id: string): Promise<ProdukItem | null> {
     const docRef = doc(db, 'produk', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return toProdukItem(docSnap.id, docSnap.data() as Record<string, unknown>);
+      const p = toProdukItem(docSnap.id, docSnap.data() as Record<string, unknown>);
+      if (p.is_active !== false && !p.deletedAt) return p;
     }
   } catch (error) {
     console.error('Error fetching product from Firestore:', error);
@@ -206,7 +212,8 @@ export async function getService(id: string): Promise<ServiceItem | null> {
     const docRef = doc(db, 'jasa', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return toServiceItem(docSnap.id, docSnap.data() as Record<string, unknown>);
+      const s = toServiceItem(docSnap.id, docSnap.data() as Record<string, unknown>);
+      if (s.is_active !== false && !s.deletedAt) return s;
     }
   } catch (error) {
     console.error('Error fetching service from Firestore:', error);
@@ -219,7 +226,8 @@ export async function getBusiness(id: string): Promise<Business | null> {
     const docRef = doc(db, 'bisnis', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return toBusiness(docSnap.id, docSnap.data() as Record<string, unknown>);
+      const b = toBusiness(docSnap.id, docSnap.data() as Record<string, unknown>);
+      if (b.is_active !== false && !b.deletedAt) return b;
     }
   } catch (error) {
     console.error('Error fetching business from Firestore:', error);

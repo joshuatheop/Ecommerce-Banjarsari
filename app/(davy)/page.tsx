@@ -5,7 +5,7 @@ import ServiceCard from "@/components/shared/ServiceCard";
 import RankRow from "@/components/shared/RankRow";
 import { Icons } from "@/components/shared/Icons";
 
-export const revalidate = 60; // Revalidate every minute
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [rawProducts, rawServices, rawBusinesses] = await Promise.all([

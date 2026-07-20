@@ -2,10 +2,34 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { Icons } from './Icons';
 import { useAuth } from '@/context/AuthContext';
+
+function NavLinks() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const typeParam = searchParams ? searchParams.get('type') : null;
+
+  const isHomeActive = pathname === '/';
+  const isLayananActive = pathname.startsWith('/layanan') || (pathname.startsWith('/katalog') && typeParam === 'service');
+  const isKatalogActive = (pathname.startsWith('/katalog') || pathname.startsWith('/produk')) && !isLayananActive;
+
+  return (
+    <nav className="header-nav">
+      <Link href="/" className={isHomeActive ? 'active' : ''}>
+        Beranda
+      </Link>
+      <Link href="/katalog?type=product" className={isKatalogActive ? 'active' : ''}>
+        Katalog
+      </Link>
+      <Link href="/katalog?type=service" className={isLayananActive ? 'active' : ''}>
+        Layanan Jasa
+      </Link>
+    </nav>
+  );
+}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -46,17 +70,15 @@ export default function Navbar() {
           </Link>
 
           {/* Nav Links */}
-          <nav className="header-nav">
-            <Link href="/" className={pathname === '/' ? 'active' : ''}>
-              Beranda
-            </Link>
-            <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>
-              Katalog
-            </Link>
-            <Link href="/katalog?type=service" className={''}>
-              Layanan Jasa
-            </Link>
-          </nav>
+          <Suspense fallback={
+            <nav className="header-nav">
+              <Link href="/" className={pathname === '/' ? 'active' : ''}>Beranda</Link>
+              <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>Katalog</Link>
+              <Link href="/katalog?type=service">Layanan Jasa</Link>
+            </nav>
+          }>
+            <NavLinks />
+          </Suspense>
 
           {/* Search */}
           <div className="search-box">
