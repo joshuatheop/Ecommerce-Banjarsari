@@ -93,6 +93,14 @@ export default function AdminUmkmPage() {
         </div>
         <div className={styles.headerActions}>
           <button
+            id="btn-import-umkm"
+            className={styles.btnSecondary}
+            onClick={() => router.push('/admin/umkm/import')}
+            style={{ marginRight: '4px' }}
+          >
+            📥 Import Excel/CSV
+          </button>
+          <button
             id="btn-tambah-umkm"
             className={styles.btnPrimary}
             onClick={() => router.push('/admin/umkm/tambah')}
