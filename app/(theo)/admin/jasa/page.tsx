@@ -118,6 +118,14 @@ export default function AdminJasaPage() {
         </div>
         <div className={styles.headerActions}>
           <button
+            id="btn-import-jasa"
+            className={styles.btnSecondary}
+            onClick={() => router.push('/admin/jasa/import')}
+            style={{ marginRight: '4px' }}
+          >
+            📥 Import Excel/CSV
+          </button>
+          <button
             id="btn-tambah-jasa"
             className={styles.btnPrimary}
             onClick={() => router.push('/admin/jasa/tambah')}
