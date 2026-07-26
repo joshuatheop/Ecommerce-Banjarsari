@@ -90,6 +90,14 @@ export default function AdminProdukPage() {
         </div>
         <div className={styles.headerActions}>
           <button
+            id="btn-import-produk"
+            className={styles.btnSecondary}
+            onClick={() => router.push('/admin/produk/import')}
+            style={{ marginRight: '4px' }}
+          >
+            📥 Import Excel/CSV
+          </button>
+          <button
             id="btn-tambah-produk"
             className={styles.btnPrimary}
             onClick={() => router.push('/admin/produk/tambah')}
