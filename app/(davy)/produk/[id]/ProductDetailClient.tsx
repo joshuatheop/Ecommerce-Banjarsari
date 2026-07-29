@@ -21,9 +21,11 @@ export default function ProductDetailClient({ product, business }: ProductDetail
       trackClickEvent('view_item', {
         itemName: product.product_name,
         businessName: business?.business_name || 'UMKM Banjarsari',
+        productId: product.product_id,
+        businessId: product.business_id,
       });
     }
-  }, [product.product_id, product.product_name, business?.business_name]);
+  }, [product.product_id, product.product_name, product.business_id, business?.business_name]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', {
@@ -40,6 +42,8 @@ export default function ProductDetailClient({ product, business }: ProductDetail
       itemName: product.product_name,
       businessName: business?.business_name || 'UMKM Banjarsari',
       waNumber,
+      productId: product.product_id,
+      businessId: product.business_id,
     });
     await incrementProductClicks(product.product_id);
 
@@ -58,6 +62,8 @@ export default function ProductDetailClient({ product, business }: ProductDetail
       itemName: product.product_name,
       businessName: business?.business_name || 'UMKM Banjarsari',
       marketplaceUrl: url,
+      productId: product.product_id,
+      businessId: product.business_id,
     });
     await incrementProductClicks(product.product_id);
 

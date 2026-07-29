@@ -166,84 +166,86 @@ export default function AdminProdukPage() {
         </div>
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    checked={allChecked}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
-                <th>Produk</th>
-                <th>Kategori</th>
-                <th>Harga</th>
-                <th>Status</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => (
-                <tr key={p.product_id} className={styles.tableRow}>
-                  <td>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(p.product_id)}
-                      onChange={(e) => toggleSelect(p.product_id, e.target.checked)}
+                      checked={allChecked}
+                      onChange={(e) => toggleAll(e.target.checked)}
                     />
-                  </td>
-                  <td className={styles.tdProduk}>
-                    <div className={styles.produkCell}>
-                      {p.thumbnail_url ? (
-                        <img className={styles.thumbnail} src={p.thumbnail_url} alt={p.product_name} />
-                      ) : (
-                        <div className={styles.thumbPlaceholder} />
-                      )}
-                      <div>
-                        <div className={styles.produkName}>{p.product_name}</div>
-                        <div className={styles.produkDesc}>
-                          {(p.product_description ?? '').slice(0, 55)}
-                          {(p.product_description ?? '').length > 55 ? '…' : ''}
+                  </th>
+                  <th>Produk</th>
+                  <th>Kategori</th>
+                  <th>Harga</th>
+                  <th>Status</th>
+                  <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => (
+                  <tr key={p.product_id} className={styles.tableRow}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(p.product_id)}
+                        onChange={(e) => toggleSelect(p.product_id, e.target.checked)}
+                      />
+                    </td>
+                    <td className={styles.tdProduk}>
+                      <div className={styles.produkCell}>
+                        {p.thumbnail_url ? (
+                          <img className={styles.thumbnail} src={p.thumbnail_url} alt={p.product_name} />
+                        ) : (
+                          <div className={styles.thumbPlaceholder} />
+                        )}
+                        <div>
+                          <div className={styles.produkName}>{p.product_name}</div>
+                          <div className={styles.produkDesc}>
+                            {(p.product_description ?? '').slice(0, 55)}
+                            {(p.product_description ?? '').length > 55 ? '…' : ''}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={styles.tagKategori}>
-                      {getCategoryName(p.category_id)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={styles.mono} style={{ fontWeight: 600 }}>
-                      {formatRp(p.product_price)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={p.is_active ? styles.tagKategori : styles.tagRange}>
-                      {p.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup}>
-                      <button
-                        id={`btn-edit-${p.product_id}`}
-                        className={styles.kebab}
-                        onClick={() => router.push(`/admin/produk/${p.product_id}/edit`)}
-                        title="Edit"
-                      >✏️</button>
-                      <button
-                        id={`btn-hapus-${p.product_id}`}
-                        className={`${styles.kebab} ${styles.kebabDanger}`}
-                        onClick={() => setDeleteTarget(p)}
-                        title="Hapus"
-                      >🗑</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td>
+                      <span className={styles.tagKategori}>
+                        {getCategoryName(p.category_id)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.mono} style={{ fontWeight: 600 }}>
+                        {formatRp(p.product_price)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={p.is_active ? styles.tagKategori : styles.tagRange}>
+                        {p.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionGroup}>
+                        <button
+                          id={`btn-edit-${p.product_id}`}
+                          className={styles.kebab}
+                          onClick={() => router.push(`/admin/produk/${p.product_id}/edit`)}
+                          title="Edit"
+                        >✏️</button>
+                        <button
+                          id={`btn-hapus-${p.product_id}`}
+                          className={`${styles.kebab} ${styles.kebabDanger}`}
+                          onClick={() => setDeleteTarget(p)}
+                          title="Hapus"
+                        >🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table footer */}
           <div className={styles.tableFoot}>

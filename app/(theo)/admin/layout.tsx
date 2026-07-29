@@ -2,17 +2,27 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import styles from './admin.module.css';
+import {
+  LayoutDashboard,
+  Package,
+  Wrench,
+  Store,
+  Tag,
+  Home,
+  LogOut,
+} from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router           = useRouter();
+  const router = useRouter();
   const { user, role, loading, logout } = useAuth();
 
   // Guard: redirect jika bukan admin
   useEffect(() => {
     if (!loading) {
-      if (!user)            router.replace('/login');
+      if (!user) router.replace('/login');
       else if (role !== 'admin') router.replace('/');
     }
   }, [user, role, loading, router]);
@@ -31,12 +41,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const NAV_ITEMS = [
-    { href: '/admin',          icon: '◈', label: 'Dashboard'  },
-    { href: '/admin/produk',   icon: '⊞', label: 'Produk'     },
-    { href: '/admin/jasa',     icon: '⚙', label: 'Jasa'       },
-    { href: '/admin/umkm',     icon: '⊟', label: 'UMKM/Penyedia Jasa' },
-    { href: '/admin/kategori', icon: '⊜', label: 'Kategori'   },
-    { href: '/',               icon: '⌂', label: 'Laman User' },
+    { href: '/admin', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+    { href: '/admin/produk', icon: <Package size={18} />, label: 'Produk' },
+    { href: '/admin/jasa', icon: <Wrench size={18} />, label: 'Jasa' },
+    { href: '/admin/umkm', icon: <Store size={18} />, label: 'UMKM/Penyedia Jasa' },
+    { href: '/admin/kategori', icon: <Tag size={18} />, label: 'Kategori' },
   ];
 
   return (
@@ -46,7 +55,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className={styles.sidebarTop}>
           {/* Brand */}
           <div className={styles.brand}>
-            <span className={styles.brandDot} />
+            <Image
+              src="/Logo Palugada.png"
+              alt="Logo Palugada"
+              width={30}
+              height={30}
+              style={{ objectFit: 'contain' }}
+            />
             <span className={styles.brandText}>PALUGADA</span>
           </div>
           <p className={styles.brandSub}>Admin Panel</p>
@@ -70,6 +85,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* User info + logout */}
         <div className={styles.sidebarBottom}>
+          <a
+            href="/"
+            className={styles.navItem}
+            id="admin-nav-laman-user"
+          >
+            <span className={styles.navIcon}><Home size={18} /></span>
+            Laman User
+          </a>
           <div className={styles.userInfo}>
             <div className={styles.userAvatar}>
               {user.email?.[0]?.toUpperCase() ?? 'A'}
@@ -84,7 +107,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             onClick={() => { logout(); router.replace('/'); }}
             className={styles.logoutBtn}
           >
-            Keluar ↗
+            <LogOut size={15} />
+            Keluar
           </button>
         </div>
       </aside>

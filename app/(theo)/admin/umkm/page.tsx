@@ -171,85 +171,87 @@ export default function AdminUmkmPage() {
         </div>
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    checked={allChecked}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
-                <th>Nama Usaha</th>
-                <th>Dusun / Area</th>
-                <th>No. Telepon</th>
-                <th>Status</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((b) => (
-                <tr key={b.business_id} className={styles.tableRow}>
-                  <td>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(b.business_id)}
-                      onChange={(e) => toggleSelect(b.business_id, e.target.checked)}
+                      checked={allChecked}
+                      onChange={(e) => toggleAll(e.target.checked)}
                     />
-                  </td>
-                  <td className={styles.tdProduk}>
-                    <div className={styles.produkCell}>
-                      {b.business_logo_url ? (
-                        <img
-                          className={styles.thumbnail}
-                          src={b.business_logo_url}
-                          alt={b.business_name}
-                        />
-                      ) : (
-                        <div className={styles.thumbPlaceholder}>
-                          {b.business_name[0]?.toUpperCase() ?? 'U'}
-                        </div>
-                      )}
-                      <div>
-                        <div className={styles.produkName}>{b.business_name}</div>
-                        {b.owner_name && (
-                          <div className={styles.produkDesc}>oleh {b.owner_name}</div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td>{b.area_name ?? '—'}</td>
-                  <td className={styles.mono}>{b.business_phone ?? '—'}</td>
-                  <td>
-                    <span className={b.is_active ? styles.tagKategori : styles.tagRange}>
-                      {b.is_active ? '● Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup}>
-                      <button
-                        id={`btn-edit-${b.business_id}`}
-                        className={styles.kebab}
-                        onClick={() => router.push(`/admin/umkm/${b.business_id}/edit`)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        id={`btn-hapus-${b.business_id}`}
-                        className={`${styles.kebab} ${styles.kebabDanger}`}
-                        onClick={() => setDeleteTarget(b)}
-                        title="Hapus"
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </td>
+                  </th>
+                  <th>Nama Usaha</th>
+                  <th>Dusun / Area</th>
+                  <th>No. Telepon</th>
+                  <th>Status</th>
+                  <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((b) => (
+                  <tr key={b.business_id} className={styles.tableRow}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(b.business_id)}
+                        onChange={(e) => toggleSelect(b.business_id, e.target.checked)}
+                      />
+                    </td>
+                    <td className={styles.tdProduk}>
+                      <div className={styles.produkCell}>
+                        {b.business_logo_url ? (
+                          <img
+                            className={styles.thumbnail}
+                            src={b.business_logo_url}
+                            alt={b.business_name}
+                          />
+                        ) : (
+                          <div className={styles.thumbPlaceholder}>
+                            {b.business_name[0]?.toUpperCase() ?? 'U'}
+                          </div>
+                        )}
+                        <div>
+                          <div className={styles.produkName}>{b.business_name}</div>
+                          {b.owner_name && (
+                            <div className={styles.produkDesc}>oleh {b.owner_name}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td>{b.area_name ?? '—'}</td>
+                    <td className={styles.mono}>{b.business_phone ?? '—'}</td>
+                    <td>
+                      <span className={b.is_active ? styles.tagKategori : styles.tagRange}>
+                        {b.is_active ? '● Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionGroup}>
+                        <button
+                          id={`btn-edit-${b.business_id}`}
+                          className={styles.kebab}
+                          onClick={() => router.push(`/admin/umkm/${b.business_id}/edit`)}
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          id={`btn-hapus-${b.business_id}`}
+                          className={`${styles.kebab} ${styles.kebabDanger}`}
+                          onClick={() => setDeleteTarget(b)}
+                          title="Hapus"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table footer */}
           <div className={styles.tableFoot}>

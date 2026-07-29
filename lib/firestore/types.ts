@@ -17,7 +17,8 @@ export type EventType =
   | 'SERVICE_VIEW'
   | 'WHATSAPP_CLICK'
   | 'MARKETPLACE_CLICK'
-  | 'SHARE_CLICK';
+  | 'SHARE_CLICK'
+  | 'PAGE_VIEW';
 
 // ---- A. Produk ----
 export interface ProdukItem {
@@ -123,6 +124,8 @@ export interface AnalyticsEvent {
   event_type: EventType;
   destination_url: string | null; // also used as display name in aggregation
   createdAt?: Date;
+  itemName?: string | null;
+  businessName?: string | null;
 }
 
 // ============================================================
