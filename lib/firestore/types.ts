@@ -128,6 +128,15 @@ export interface AnalyticsEvent {
   businessName?: string | null;
 }
 
+// ---- H. SEO Meta ----
+export interface SeoMeta {
+  title: string;             // max 60 chars
+  description: string;      // max 160 chars
+  ogTitle: string;
+  ogDescription: string;
+  updatedAt?: Date;
+}
+
 // ============================================================
 // Helper: format service price for display
 // ============================================================

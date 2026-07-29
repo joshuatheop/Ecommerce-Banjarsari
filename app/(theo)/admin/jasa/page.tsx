@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAllJasa, deleteJasa } from '@/lib/firestore/jasa';
+import { getAllJasa, deleteJasa, updateJasa } from '@/lib/firestore/jasa';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
 import type { ServiceItem, Category, Business } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
@@ -22,6 +22,8 @@ export default function AdminJasaPage() {
   const [deleteTarget, setDeleteTarget] = useState<ServiceItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -34,7 +36,7 @@ export default function AdminJasaPage() {
     setJasaList(visible);
     setCategories(cats.filter((c) => c.category_type === 'SERVICE'));
     setBusinesses(bizs);
-    setFiltered(visible);
+    setFiltered(visible.filter((j) => j.is_active));
     setLoading(false);
   }, []);
 
@@ -44,7 +46,8 @@ export default function AdminJasaPage() {
 
   // Filter logic
   useEffect(() => {
-    let result = jasaList;
+    const base = jasaList.filter((j) => showArchived ? !j.is_active : j.is_active);
+    let result = base;
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter(
@@ -58,7 +61,7 @@ export default function AdminJasaPage() {
     }
     setFiltered(result);
     setSelected([]);
-  }, [search, filterKategori, jasaList]);
+  }, [search, filterKategori, jasaList, showArchived]);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -77,6 +80,19 @@ export default function AdminJasaPage() {
       showToast('Gagal menghapus jasa.', false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRestore = async (j: ServiceItem) => {
+    setRestoring(j.service_id);
+    try {
+      await updateJasa(j.service_id, { is_active: true });
+      showToast(`"${j.service_name}" berhasil diaktifkan kembali.`, true);
+      await loadData();
+    } catch {
+      showToast('Gagal mengaktifkan jasa.', false);
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -117,6 +133,14 @@ export default function AdminJasaPage() {
           <h1 className={styles.title}>Katalog Layanan Jasa</h1>
         </div>
         <div className={styles.headerActions}>
+          <button
+            id="btn-lihat-arsip-jasa"
+            className={styles.btnSecondary}
+            onClick={() => { setShowArchived((v) => !v); setSearch(''); setFilterKategori(''); }}
+            style={{ marginRight: '4px' }}
+          >
+            {showArchived ? '◀ Kembali ke Aktif' : '🗂 Lihat Diarsipkan'}
+          </button>
           <button
             id="btn-import-jasa"
             className={styles.btnSecondary}
@@ -186,12 +210,16 @@ export default function AdminJasaPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>🛠️</div>
-          <p className={styles.emptyTitle}>Belum ada layanan jasa</p>
+          <div className={styles.emptyIcon}>{showArchived ? '🗂' : '🛠️'}</div>
+          <p className={styles.emptyTitle}>
+            {showArchived ? 'Tidak ada jasa diarsipkan' : 'Belum ada layanan jasa'}
+          </p>
           <p className={styles.emptyDesc}>
             {search || filterKategori
               ? 'Tidak ada hasil yang sesuai filter. Coba ubah pencarian.'
-              : 'Tambahkan layanan jasa pertama untuk memulai.'}
+              : showArchived
+                ? 'Jasa yang dinonaktifkan akan muncul di sini.'
+                : 'Tambahkan layanan jasa pertama untuk memulai.'}
           </p>
         </div>
       ) : (
@@ -263,22 +291,36 @@ export default function AdminJasaPage() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className={styles.actionGroup}>
-                        <button
-                          id={`btn-edit-${j.service_id}`}
-                          className={styles.kebab}
-                          onClick={() => router.push(`/admin/jasa/${j.service_id}/edit`)}
-                          title="Edit"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          id={`btn-hapus-${j.service_id}`}
-                          className={`${styles.kebab} ${styles.kebabDanger}`}
-                          onClick={() => setDeleteTarget(j)}
-                          title="Hapus"
-                        >
-                          🗑
-                        </button>
+                        {showArchived ? (
+                          <button
+                            id={`btn-restore-${j.service_id}`}
+                            className={styles.kebab}
+                            onClick={() => handleRestore(j)}
+                            disabled={restoring === j.service_id}
+                            title="Aktifkan Kembali"
+                          >
+                            {restoring === j.service_id ? '⏳' : '♻️'}
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              id={`btn-edit-${j.service_id}`}
+                              className={styles.kebab}
+                              onClick={() => router.push(`/admin/jasa/${j.service_id}/edit`)}
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              id={`btn-hapus-${j.service_id}`}
+                              className={`${styles.kebab} ${styles.kebabDanger}`}
+                              onClick={() => setDeleteTarget(j)}
+                              title="Hapus"
+                            >
+                              🗑
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -290,7 +332,9 @@ export default function AdminJasaPage() {
           {/* Table footer */}
           <div className={styles.tableFoot}>
             <span className={styles.tableCount}>
-              Menampilkan {filtered.length} dari {jasaList.length} jasa
+              {showArchived
+                ? `${filtered.length} jasa diarsipkan`
+                : `Menampilkan ${filtered.length} dari ${jasaList.filter(j => j.is_active).length} jasa aktif`}
             </span>
           </div>
         </div>

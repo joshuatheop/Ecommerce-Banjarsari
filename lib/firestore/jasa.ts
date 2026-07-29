@@ -5,6 +5,7 @@ import {
   getDoc,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   serverTimestamp,
@@ -107,14 +108,10 @@ export async function updateJasa(id: string, payload: UpdateJasaPayload): Promis
 }
 
 // ============================================================
-// DELETE — Soft delete (set deletedAt + is_active = false)
+// DELETE — Hard delete (hapus permanen dokumen dari Firestore)
 // ============================================================
 
 export async function deleteJasa(id: string): Promise<void> {
   const ref = doc(db, COLLECTION, id);
-  await updateDoc(ref, {
-    deletedAt:  serverTimestamp(),
-    is_active:  false,
-    updatedAt:  serverTimestamp(),
-  });
+  await deleteDoc(ref);
 }

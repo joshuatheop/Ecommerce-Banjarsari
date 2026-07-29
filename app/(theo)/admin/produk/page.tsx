@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAllProduk, deleteProduk } from '@/lib/firestore/produk';
+import { getAllProduk, deleteProduk, updateProduk } from '@/lib/firestore/produk';
 import { getCategories } from '@/lib/firestore/data-loader';
 import type { ProdukItem, Category } from '@/lib/firestore/types';
 import styles from './produk.module.css';
@@ -20,6 +20,8 @@ export default function AdminProdukPage() {
   const [deleteTarget, setDeleteTarget] = useState<ProdukItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -28,7 +30,7 @@ export default function AdminProdukPage() {
     const visible = data.filter((p) => !p.deletedAt);
     setProdukList(visible);
     setCategories(cats.filter((c) => c.category_type === 'PRODUCT'));
-    setFiltered(visible);
+    setFiltered(visible.filter((p) => p.is_active));
     setLoading(false);
   }, []);
 
@@ -36,7 +38,8 @@ export default function AdminProdukPage() {
 
   // Filter logic
   useEffect(() => {
-    let result = produkList;
+    const base = produkList.filter((p) => showArchived ? !p.is_active : p.is_active);
+    let result = base;
     const q = search.trim().toLowerCase();
     if (q) result = result.filter(
       (p) => p.product_name.toLowerCase().includes(q)
@@ -45,7 +48,7 @@ export default function AdminProdukPage() {
     if (filterKategori) result = result.filter((p) => p.category_id === filterKategori);
     setFiltered(result);
     setSelected([]);
-  }, [search, filterKategori, produkList]);
+  }, [search, filterKategori, produkList, showArchived]);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -64,6 +67,19 @@ export default function AdminProdukPage() {
       showToast('Gagal menghapus produk.', false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRestore = async (p: ProdukItem) => {
+    setRestoring(p.product_id);
+    try {
+      await updateProduk(p.product_id, { is_active: true });
+      showToast(`"${p.product_name}" berhasil diaktifkan kembali.`, true);
+      await loadData();
+    } catch {
+      showToast('Gagal mengaktifkan produk.', false);
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -89,6 +105,14 @@ export default function AdminProdukPage() {
           <h1 className={styles.title}>Katalog Produk</h1>
         </div>
         <div className={styles.headerActions}>
+          <button
+            id="btn-lihat-arsip-produk"
+            className={styles.btnSecondary}
+            onClick={() => { setShowArchived((v) => !v); setSearch(''); setFilterKategori(''); }}
+            style={{ marginRight: '4px' }}
+          >
+            {showArchived ? '◀ Kembali ke Aktif' : '🗂 Lihat Diarsipkan'}
+          </button>
           <button
             id="btn-import-produk"
             className={styles.btnSecondary}
@@ -156,12 +180,16 @@ export default function AdminProdukPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>📦</div>
-          <p className={styles.emptyTitle}>Belum ada produk</p>
+          <div className={styles.emptyIcon}>{showArchived ? '🗂' : '📦'}</div>
+          <p className={styles.emptyTitle}>
+            {showArchived ? 'Tidak ada produk diarsipkan' : 'Belum ada produk'}
+          </p>
           <p className={styles.emptyDesc}>
             {search || filterKategori
               ? 'Tidak ada hasil yang sesuai filter. Coba ubah pencarian.'
-              : 'Tambahkan produk pertama untuk memulai.'}
+              : showArchived
+                ? 'Produk yang dinonaktifkan akan muncul di sini.'
+                : 'Tambahkan produk pertama untuk memulai.'}
           </p>
         </div>
       ) : (
@@ -227,18 +255,32 @@ export default function AdminProdukPage() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className={styles.actionGroup}>
-                        <button
-                          id={`btn-edit-${p.product_id}`}
-                          className={styles.kebab}
-                          onClick={() => router.push(`/admin/produk/${p.product_id}/edit`)}
-                          title="Edit"
-                        >✏️</button>
-                        <button
-                          id={`btn-hapus-${p.product_id}`}
-                          className={`${styles.kebab} ${styles.kebabDanger}`}
-                          onClick={() => setDeleteTarget(p)}
-                          title="Hapus"
-                        >🗑</button>
+                        {showArchived ? (
+                          <button
+                            id={`btn-restore-${p.product_id}`}
+                            className={styles.kebab}
+                            onClick={() => handleRestore(p)}
+                            disabled={restoring === p.product_id}
+                            title="Aktifkan Kembali"
+                          >
+                            {restoring === p.product_id ? '⏳' : '♻️'}
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              id={`btn-edit-${p.product_id}`}
+                              className={styles.kebab}
+                              onClick={() => router.push(`/admin/produk/${p.product_id}/edit`)}
+                              title="Edit"
+                            >✏️</button>
+                            <button
+                              id={`btn-hapus-${p.product_id}`}
+                              className={`${styles.kebab} ${styles.kebabDanger}`}
+                              onClick={() => setDeleteTarget(p)}
+                              title="Hapus"
+                            >🗑</button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -250,7 +292,9 @@ export default function AdminProdukPage() {
           {/* Table footer */}
           <div className={styles.tableFoot}>
             <span className={styles.tableCount}>
-              Menampilkan {filtered.length} dari {produkList.length} produk
+              {showArchived
+                ? `${filtered.length} produk diarsipkan`
+                : `Menampilkan ${filtered.length} dari ${produkList.filter(p => p.is_active).length} produk aktif`}
             </span>
           </div>
         </div>

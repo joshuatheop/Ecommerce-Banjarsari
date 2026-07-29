@@ -165,10 +165,9 @@ export default function AdminKategoriPage() {
                       onChange={(e) => toggleAll(e.target.checked)}
                     />
                   </th>
-                  <th>Kategori</th>
-                  <th>Tipe Kategori</th>
-                  <th>Slug URL</th>
-                  <th>Status</th>
+                  <th>Nama Kategori</th>
+                  <th>Tipe</th>
+                  <th>Slug</th>
                   <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
                 </tr>
               </thead>
@@ -198,11 +197,6 @@ export default function AdminKategoriPage() {
                       </span>
                     </td>
                     <td className={styles.mono}>{k.slug}</td>
-                    <td>
-                      <span className={k.is_active ? styles.tagKategori : styles.tagRange}>
-                        {k.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </td>
                     <td style={{ textAlign: 'right' }}>
                       <div className={styles.actionGroup}>
                         <button
@@ -245,7 +239,7 @@ export default function AdminKategoriPage() {
             <h3 className={styles.modalTitle}>Hapus Kategori?</h3>
             <p className={styles.modalDesc}>
               Kategori <strong>&ldquo;{deleteTarget.category_name}&rdquo;</strong> akan
-              dinonaktifkan dan tidak akan muncul di filter pencarian produk/jasa.
+              dihapus secara permanen dari database.
             </p>
             <div className={styles.modalActions}>
               <button
