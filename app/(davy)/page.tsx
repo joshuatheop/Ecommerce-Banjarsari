@@ -97,7 +97,7 @@ export default async function Home() {
                 aspectRatio: "4/5", borderRadius: "var(--radius-xl)", overflow: "hidden",
                 background: "var(--primary)", position: "relative",
                 boxShadow: "var(--shadow-lg)",
-                display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 32
+                display: "flex", flexDirection: "column", justifyContent: "flex-start", padding: "80px 28px 148px"
               }}>
                 <div style={{
                   position: "absolute", inset: 0,
@@ -117,23 +117,59 @@ export default async function Home() {
                 </h3>
               </div>
 
-              {/* Floating trending item card */}
-              <div style={{
-                position: "absolute", right: -16, bottom: 100, width: 260,
-                background: "var(--surface)", borderRadius: 14, padding: 18,
-                boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
-              }}>
-                <div className="label-eyebrow" style={{ marginBottom: 6, color: "var(--primary)" }}>Terpopuler Hari Ini</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>Batik Sari Asih</div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--primary)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
-                    Kain Motif Tulis
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
-                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> 487 klik
-                  </span>
-                </div>
-              </div>
+              {/* Floating trending item card (Centered) */}
+              {topProducts.length > 0 && (
+                <Link
+                  href={`/produk/${topProducts[0].id}`}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 24,
+                    transform: "translateX(-50%)",
+                    width: "calc(100% - 48px)",
+                    maxWidth: 320,
+                    background: "var(--surface)",
+                    borderRadius: "var(--radius-lg)",
+                    padding: 16,
+                    boxShadow: "var(--shadow-lg)",
+                    border: "1px solid var(--line)",
+                    textDecoration: "none",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    zIndex: 2,
+                  }}
+                >
+                  <div className="label-eyebrow" style={{ marginBottom: 4, color: "var(--primary)", fontSize: 10, display: "flex", alignItems: "center", gap: 4 }}>
+                    <Icons.Flame style={{ color: "var(--accent-y)", width: 12, height: 12 }} /> Terpopuler Hari Ini
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "var(--dark)",
+                      lineHeight: 1.3,
+                      marginBottom: 4,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 1,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {topProducts[0].name}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, fontWeight: 500 }}>
+                    Oleh: <strong style={{ color: "var(--primary)" }}>{getBusinessName(topProducts[0].businessId)}</strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px dashed var(--line)" }}>
+                    <span style={{ color: "var(--dark)", fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 800 }}>
+                      Rp {topProducts[0].price.toLocaleString("id-ID")}
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
+                      {topProducts[0].clickCount.toLocaleString("id-ID")} klik
+                    </span>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </div>

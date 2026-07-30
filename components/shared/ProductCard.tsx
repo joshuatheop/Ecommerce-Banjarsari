@@ -7,6 +7,7 @@ import { Icons } from './Icons';
 interface ProductCardProps {
   product: Product;
   businessName: string;
+  businessArea?: string;
 }
 
 const formatPrice = (price: number) => {
@@ -15,15 +16,29 @@ const formatPrice = (price: number) => {
 };
 
 
-const ProductCard = ({ product, businessName }: ProductCardProps) => {
+const ProductCard = ({ product, businessName, businessArea }: ProductCardProps) => {
+  const imageUrl = (product.imageUrls && product.imageUrls[0]) || (product.Gallery_Images && product.Gallery_Images[0]);
+
   return (
     <Link href={`/produk/${product.id}`} className="fl-card">
       {/* Thumbnail */}
       <div className="fl-card-thumb">
-        <div className="fl-card-placeholder">
-          <span>{product.category}</span>
-        </div>
-        <button className="fl-card-fav" aria-label="Favorit" onClick={(e) => e.preventDefault()}>
+        {imageUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={imageUrl} alt={product.name} className="fl-card-img" />
+        ) : (
+          <div className="fl-card-placeholder">
+            <span>{product.category}</span>
+          </div>
+        )}
+        <button
+          className="fl-card-fav"
+          aria-label="Favorit"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
@@ -42,6 +57,11 @@ const ProductCard = ({ product, businessName }: ProductCardProps) => {
         <div className="fl-card-name">{product.name}</div>
         <div className="fl-card-meta">
           <span className="fl-card-cat">{product.category}</span>
+          {businessArea && (
+            <span className="fl-card-area" style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>
+              <Icons.MapPin style={{ width: 11, height: 11 }} /> {businessArea}
+            </span>
+          )}
         </div>
         <div className="fl-card-price">{formatPrice(product.price)}</div>
         <div className="fl-card-clicks" suppressHydrationWarning>

@@ -1,7 +1,7 @@
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Product, Service, Business, Category } from './types';
-import { mockProducts, mockServices, mockBusinesses, mockCategories } from './mock-data';
+import type { Product, Service, Business, Category, Review } from './types';
+import { mockProducts, mockServices, mockBusinesses, mockCategories, mockReviews } from './mock-data';
 
 // ============================================================
 // Helper: convert Firestore doc to typed object
@@ -15,11 +15,21 @@ function toDate(val: any): Date {
 }
 
 function toProduct(id: string, data: Record<string, unknown>): Product {
-  const name = (data.product_name as string) || '';
-  const description = (data.product_description as string) || '';
-  const price = (data.product_price as number) || 0;
-  const category = (data.category_id as string) || '';
-  const imageUrls = (data.thumbnail_url as string) ? [data.thumbnail_url as string] : [];
+  const name = (data.product_name as string) || (data.name as string) || (data.Product_Name as string) || '';
+  const description = (data.product_description as string) || (data.description as string) || (data.Full_Description as string) || '';
+  const price = (data.product_price as number) ?? (data.price as number) ?? (data.Product_Price as number) ?? 0;
+  const category = (data.category_id as string) || (data.category as string) || (data.Related_Product_Category_ID as string) || (data.Category as string) || '';
+
+  let imageUrls: string[] = [];
+  if (data.thumbnail_url as string) {
+    imageUrls = [data.thumbnail_url as string];
+  } else if (Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
+    imageUrls = data.imageUrls as string[];
+  } else if (Array.isArray(data.Gallery_Images) && data.Gallery_Images.length > 0) {
+    imageUrls = data.Gallery_Images as string[];
+  } else if (data.imageUrl as string) {
+    imageUrls = [data.imageUrl as string];
+  }
 
   return {
     id,
@@ -27,10 +37,10 @@ function toProduct(id: string, data: Record<string, unknown>): Product {
     description,
     price,
     category,
-    businessId: (data.business_id as string) || '',
+    businessId: (data.business_id as string) || (data.businessId as string) || (data.Business_ID as string) || '',
     imageUrls,
     status: data.is_active === false ? 'nonaktif' : 'aktif',
-    clickCount: (data.clickCount as number) || 0,
+    clickCount: (data.clickCount as number) || (data.click_count as number) || 0,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
 
@@ -40,21 +50,33 @@ function toProduct(id: string, data: Record<string, unknown>): Product {
     Full_Description: description,
     Product_Price: price,
     Related_Product_Category_ID: category,
-    Marketplace_URL: (data.marketplace as string) || '',
+    Marketplace_URL: (data.marketplace as string) || (data.Marketplace_URL as string) || '',
   };
 }
 
 function toService(id: string, data: Record<string, unknown>): Service {
-  const name = (data.service_name as string) || '';
-  const description = (data.service_description as string) || '';
-  const imageUrls = (data.thumbnail_url as string) ? [data.thumbnail_url as string] : [];
-  const minPrice = (data.minimum_price as number) || 0;
-  const maxPrice = (data.maximum_price as number) || 0;
-  const priceType = (data.price_type as string) || 'FIXED';
+  const name = (data.service_name as string) || (data.name as string) || (data.Service_Name as string) || '';
+  const description = (data.service_description as string) || (data.description as string) || (data.Full_Description as string) || '';
 
-  const priceRange = priceType === 'RANGE'
+  let imageUrls: string[] = [];
+  if (data.thumbnail_url as string) {
+    imageUrls = [data.thumbnail_url as string];
+  } else if (Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
+    imageUrls = data.imageUrls as string[];
+  } else if (Array.isArray(data.Gallery_Images) && data.Gallery_Images.length > 0) {
+    imageUrls = data.Gallery_Images as string[];
+  } else if (data.imageUrl as string) {
+    imageUrls = [data.imageUrl as string];
+  }
+
+  const minPrice = (data.minimum_price as number) ?? (data.price as number) ?? (data.minPrice as number) ?? 0;
+  const maxPrice = (data.maximum_price as number) ?? (data.maxPrice as number) ?? 0;
+  const priceType = (data.price_type as string) || (data.priceType as string) || 'FIXED';
+  const category = (data.category_id as string) || (data.category as string) || (data.Category as string) || '';
+
+  const priceRange = (data.priceRange as string) || (priceType === 'RANGE'
     ? `Rp ${minPrice.toLocaleString('id-ID')} – Rp ${maxPrice.toLocaleString('id-ID')}`
-    : `Rp ${minPrice.toLocaleString('id-ID')}`;
+    : `Rp ${minPrice.toLocaleString('id-ID')}`);
 
   return {
     id,
@@ -62,11 +84,11 @@ function toService(id: string, data: Record<string, unknown>): Service {
     description,
     priceRange,
     price: minPrice,
-    category: (data.category_id as string) || '',
-    businessId: (data.business_id as string) || '',
+    category,
+    businessId: (data.business_id as string) || (data.businessId as string) || (data.Business_ID as string) || '',
     imageUrls,
     status: data.is_active === false ? 'nonaktif' : 'aktif',
-    clickCount: (data.clickCount as number) || 0,
+    clickCount: (data.clickCount as number) || (data.click_count as number) || 0,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
 
@@ -77,25 +99,80 @@ function toService(id: string, data: Record<string, unknown>): Service {
     Is_Negotiable: data.is_negotiable !== undefined ? (data.is_negotiable as boolean) : true,
     Availability_Type: (data.availability_type as string) || 'Tersedia',
     Service_Type: priceType === 'RANGE' ? 'Panggilan' : 'On-Site',
-    Marketplace_URL: (data.marketplace as string) || '',
+    Marketplace_URL: (data.marketplace as string) || (data.Marketplace_URL as string) || '',
   };
 }
 
+export function sanitizeCoordinates(
+  rawLat?: number | null,
+  rawLng?: number | null,
+  idOrSeed?: string
+): { latitude: number; longitude: number } {
+  const BASE_LAT = -7.238328;
+  const BASE_LNG = 107.836660;
+
+  // Valid Garut region bounding box (-7.40 to -7.10 S, 107.70 to 108.00 E)
+  if (
+    typeof rawLat === 'number' &&
+    typeof rawLng === 'number' &&
+    !isNaN(rawLat) &&
+    !isNaN(rawLng) &&
+    rawLat >= -7.40 &&
+    rawLat <= -7.10 &&
+    rawLng >= 107.70 &&
+    rawLng <= 108.00
+  ) {
+    return { latitude: rawLat, longitude: rawLng };
+  }
+
+  // Generate a unique, realistic location for each business in Desa Banjarsari, Garut
+  if (idOrSeed) {
+    let hash = 0;
+    for (let i = 0; i < idOrSeed.length; i++) {
+      hash = (hash << 5) - hash + idOrSeed.charCodeAt(i);
+      hash |= 0;
+    }
+    const latOffset = (((Math.abs(hash) % 21) - 10) * 0.00035); // +/- ~380m spread
+    const lngOffset = ((((Math.abs(hash) >> 4) % 21) - 10) * 0.00035); // +/- ~380m spread
+
+    return {
+      latitude: Number((BASE_LAT + latOffset).toFixed(6)),
+      longitude: Number((BASE_LNG + lngOffset).toFixed(6)),
+    };
+  }
+
+  return { latitude: BASE_LAT, longitude: BASE_LNG };
+}
+
 function toBusiness(id: string, data: Record<string, unknown>): Business {
-  const name = (data.business_name as string) || '';
-  const owner = (data.owner_name as string) || '';
-  const description = (data.business_description as string) || '';
-  const address = (data.business_address as string) || '';
-  const area = (data.area_name as string) || 'Banjarsari';
-  const whatsapp = (data.business_phone as string) || (data.whatsapp_number as string) || '';
-  const imageUrl = (data.business_logo_url as string) || '';
+  const name = (data.business_name as string) || (data.name as string) || '';
+  const owner = (data.owner_name as string) || (data.owner as string) || '';
+  const description = (data.business_description as string) || (data.description as string) || '';
+  const address = (data.business_address as string) || (data.address as string) || '';
+  const area = (data.area_name as string) || (data.area as string) || 'Banjarsari';
+  const whatsapp = (data.business_phone as string) || (data.whatsapp_number as string) || (data.whatsapp as string) || '';
+  const imageUrl = (data.business_logo_url as string) || (data.imageUrl as string) || '';
+
+  const rawLat = (data.latitude as number) ?? (data.Latitude_Coordinate as number);
+  const rawLng = (data.longitude as number) ?? (data.Longitude_Coordinate as number);
+  const { latitude: lat, longitude: lng } = sanitizeCoordinates(rawLat, rawLng, id || name);
+
+  // Auto-correct bad Firestore DB data if needed
+  if (rawLat !== undefined && rawLng !== undefined && (rawLat < -7.40 || rawLat > -7.10 || rawLng < 107.70 || rawLng > 108.00)) {
+    updateDoc(doc(db, 'bisnis', id), {
+      latitude: lat,
+      longitude: lng,
+      Latitude_Coordinate: lat,
+      Longitude_Coordinate: lng,
+    }).catch(() => { });
+  }
 
   return {
     id,
     name,
     owner,
     description,
-    category: '',
+    category: (data.category as string) || '',
     address,
     area,
     whatsapp,
@@ -105,9 +182,15 @@ function toBusiness(id: string, data: Record<string, unknown>): Business {
     updatedAt: toDate(data.updatedAt),
 
     // PBI-13 fields (fallback/aliases)
-    instagram: (data.instagram_url as string) || '',
-    facebook: (data.facebook_url as string) || '',
-    socialMediaUrl: (data.instagram_url as string) || (data.facebook_url as string) || '',
+    instagram: (data.instagram_url as string) || (data.instagram as string) || '',
+    facebook: (data.facebook_url as string) || (data.facebook as string) || '',
+    socialMediaUrl: (data.instagram_url as string) || (data.facebook_url as string) || (data.socialMediaUrl as string) || '',
+
+    // Coordinates
+    latitude: lat,
+    longitude: lng,
+    Latitude_Coordinate: lat,
+    Longitude_Coordinate: lng,
   };
 }
 
@@ -258,4 +341,110 @@ export async function incrementServiceClicks(id: string): Promise<void> {
     console.error('Error incrementing service clicks:', error);
   }
 }
+
+export async function getProductsByBusiness(businessId: string): Promise<Product[]> {
+  try {
+    const q = query(
+      collection(db, 'produk'),
+      where('business_id', '==', businessId),
+      where('is_active', '==', true)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs.map((d) => toProduct(d.id, d.data() as Record<string, unknown>));
+    }
+  } catch (error) {
+    console.error('Error fetching products by business:', error);
+  }
+  // Fallback mock
+  return mockProducts.filter((p) => p.businessId === businessId);
+}
+
+export async function getServicesByBusiness(businessId: string): Promise<Service[]> {
+  try {
+    const q = query(
+      collection(db, 'jasa'),
+      where('business_id', '==', businessId),
+      where('is_active', '==', true)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs.map((d) => toService(d.id, d.data() as Record<string, unknown>));
+    }
+  } catch (error) {
+    console.error('Error fetching services by business:', error);
+  }
+  // Fallback mock
+  return mockServices.filter((s) => s.businessId === businessId);
+}
+
+// ============================================================
+// Review / Ulasan Functions
+// ============================================================
+
+export async function getReviews(
+  targetId: string,
+  targetType: 'product' | 'service' | 'business'
+): Promise<Review[]> {
+  try {
+    const q = query(
+      collection(db, 'ulasan'),
+      where('targetId', '==', targetId),
+      where('targetType', '==', targetType)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const list = snap.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          targetId: data.targetId as string,
+          targetType: data.targetType as 'product' | 'service' | 'business',
+          userId: data.userId as string,
+          userName: data.userName as string,
+          userPhoto: data.userPhoto as string | undefined,
+          rating: Number(data.rating) || 5,
+          comment: data.comment as string,
+          createdAt: toDate(data.createdAt),
+        };
+      });
+      // Sort newest first
+      return list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+  }
+  // Fallback mock reviews
+  return mockReviews.filter(
+    (r) => r.targetId === targetId && r.targetType === targetType
+  );
+}
+
+export async function addReview(
+  reviewData: Omit<Review, 'id' | 'createdAt'>
+): Promise<Review> {
+  const newReviewDoc = {
+    ...reviewData,
+    createdAt: new Date(),
+  };
+
+  try {
+    const docRef = await addDoc(collection(db, 'ulasan'), newReviewDoc);
+    return {
+      id: docRef.id,
+      ...newReviewDoc,
+    };
+  } catch (error) {
+    console.error('Error adding review to Firestore:', error);
+    const mockId = 'rev_' + Date.now();
+    const created = {
+      id: mockId,
+      ...newReviewDoc,
+    };
+    mockReviews.unshift(created);
+    return created;
+  }
+}
+
+
 

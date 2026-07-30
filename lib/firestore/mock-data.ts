@@ -40,6 +40,10 @@ export const mockBusinesses: Business[] = [
     instagram: 'batiksari_banjarsari',
     facebook: 'Batik Sari Asih',
     socialMediaUrl: 'https://instagram.com/batiksari_banjarsari',
+    latitude: -7.2369,
+    longitude: 107.8353,
+    Latitude_Coordinate: -7.2369,
+    Longitude_Coordinate: 107.8353,
   },
   {
     id: 'b2',
@@ -57,6 +61,10 @@ export const mockBusinesses: Business[] = [
     instagram: 'dapurmakinah_banjarsari',
     facebook: 'Dapur Mak Inah',
     socialMediaUrl: 'https://instagram.com/dapurmakinah_banjarsari',
+    latitude: -7.2395,
+    longitude: 107.8379,
+    Latitude_Coordinate: -7.2395,
+    Longitude_Coordinate: 107.8379,
   },
   {
     id: 'b3',
@@ -74,6 +82,10 @@ export const mockBusinesses: Business[] = [
     instagram: 'budiservice_banjarsari',
     facebook: 'Servis Elektronik Budi',
     socialMediaUrl: 'https://instagram.com/budiservice_banjarsari',
+    latitude: -7.2378,
+    longitude: 107.8342,
+    Latitude_Coordinate: -7.2378,
+    Longitude_Coordinate: 107.8342,
   },
 ];
 
@@ -147,6 +159,22 @@ export const mockProducts: Product[] = [
     updatedAt: new Date(),
     Marketplace_URL: 'https://shopee.co.id/search?keyword=batik+cap',
   },
+  {
+    id: 'p5',
+    name: 'Nasi Goreng Spesial Banjarsari',
+    description: 'Nasi goreng khas kuliner rumahan Dapur Mak Inah dengan irisan ayam, telur ceplok, dan bumbu rempah pilihan.',
+    price: 18000,
+    category: 'makanan',
+    businessId: 'b2',
+    imageUrls: [
+      'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&auto=format&fit=crop&q=80',
+    ],
+    status: 'aktif',
+    clickCount: 520,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    Marketplace_URL: 'https://wa.me/628234567890',
+  },
 ];
 
 export const mockServices: Service[] = [
@@ -214,3 +242,57 @@ export const mockServices: Service[] = [
     Marketplace_URL: 'https://tokopedia.com',
   },
 ];
+
+export const mockReviews: import('./types').Review[] = [
+  {
+    id: 'r1',
+    targetId: 'p1',
+    targetType: 'product',
+    userId: 'u101',
+    userName: 'Ahmad Subagja',
+    rating: 5,
+    comment: 'Batiknya sangat halus, jahitan rapi dan motif parang aslinya kelihatan sangat autentik. Recommended seller dari Banjarsari!',
+    createdAt: new Date('2026-07-20T10:00:00Z'),
+  },
+  {
+    id: 'r2',
+    targetId: 'p1',
+    targetType: 'product',
+    userId: 'u102',
+    userName: 'Siti Rahmawati',
+    rating: 5,
+    comment: 'Pengiriman cepat dan packaging ramah lingkungan. Ibunya ramah banget pas dikontak via WA.',
+    createdAt: new Date('2026-07-22T14:30:00Z'),
+  },
+  {
+    id: 'r3',
+    targetId: 'p2',
+    targetType: 'product',
+    userId: 'u103',
+    userName: 'Budi Kurniawan',
+    rating: 5,
+    comment: 'Mendoannya crispy banget! Bumbu cocolannya mantap, pas buat camilan sore bareng keluarga.',
+    createdAt: new Date('2026-07-25T16:15:00Z'),
+  },
+  {
+    id: 'r4',
+    targetId: 'b1',
+    targetType: 'business',
+    userId: 'u104',
+    userName: 'Dewi Lestari',
+    rating: 5,
+    comment: 'Toko batik langganan keluarga. Hasil batik tulisnya selalu memuaskan dan pelayanannya sangat hangat.',
+    createdAt: new Date('2026-07-18T09:20:00Z'),
+  },
+  {
+    id: 'r5',
+    targetId: 's1',
+    targetType: 'service',
+    userId: 'u105',
+    userName: 'Rian Hidayat',
+    rating: 5,
+    comment: 'Servis HP Pak Budi cepat dan jujur. Layar HP yang retak diganti dengan rapi dan bergaransi.',
+    createdAt: new Date('2026-07-26T11:45:00Z'),
+  },
+];
+

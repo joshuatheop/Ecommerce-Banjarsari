@@ -15,6 +15,7 @@ interface CatalogContainerProps {
   initialType: 'product' | 'service';
   initialQuery: string;
   initialCategory: string;
+  initialArea?: string;
 }
 
 const ChevronDown = ({ open }: { open: boolean }) => (
@@ -64,11 +65,12 @@ const CatalogContainer = ({
   initialType,
   initialQuery,
   initialCategory,
+  initialArea = '',
 }: CatalogContainerProps) => {
   const [type, setType] = useState<'product' | 'service'>(initialType);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [activeArea, setActiveArea] = useState('');
+  const [activeArea, setActiveArea] = useState(initialArea);
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -78,45 +80,148 @@ const CatalogContainer = ({
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
+  const businessAreaMap = useMemo(
+    () => new Map(businesses.map((b) => [b.id, b.area])),
+    [businesses]
+  );
+  const getBusinessArea = (id: string) => businessAreaMap.get(id) || '';
+
+  const allAreas = useMemo(() => {
+    const set = new Set<string>();
+    (areas || []).forEach((a) => { if (a && a.trim()) set.add(a.trim()); });
+    businesses.forEach((b) => { if (b.area && b.area.trim()) set.add(b.area.trim()); });
+    return Array.from(set);
+  }, [areas, businesses]);
+
+  const isCategoryMatch = (itemCategory: string | undefined, targetCat: string) => {
+    if (!targetCat) return true;
+    if (!itemCategory) return false;
+
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const itemClean = itemCategory.trim().toLowerCase();
+    const targetClean = targetCat.trim().toLowerCase();
+
+    if (itemClean === targetClean) return true;
+
+    const itemNorm = normalize(itemCategory);
+    const targetNorm = normalize(targetCat);
+
+    if (itemNorm === targetNorm || itemNorm.includes(targetNorm) || targetNorm.includes(itemNorm)) {
+      return true;
+    }
+
+    const matchedCategory = categories.find((c) => {
+      const cId = normalize(c.id);
+      const cSlug = normalize(c.slug);
+      const cName = normalize(c.name);
+      return (
+        cId === targetNorm ||
+        cSlug === targetNorm ||
+        cName === targetNorm ||
+        targetNorm.includes(cSlug) ||
+        targetNorm.includes(cId)
+      );
+    });
+
+    if (matchedCategory) {
+      const cId = normalize(matchedCategory.id);
+      const cSlug = normalize(matchedCategory.slug);
+      const cName = normalize(matchedCategory.name);
+
+      return (
+        itemNorm === cId ||
+        itemNorm === cSlug ||
+        itemNorm === cName ||
+        itemNorm.includes(cSlug) ||
+        cSlug.includes(itemNorm) ||
+        itemNorm.includes(cId)
+      );
+    }
+
+    return false;
+  };
+
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category === activeCategory);
-    if (searchQuery) list = list.filter((p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    if (activeCategory) {
+      list = list.filter((p) => isCategoryMatch(p.category, activeCategory));
+    }
+    if (activeArea) {
+      const targetArea = activeArea.toLowerCase().trim();
+      list = list.filter((p) => {
+        const area = (getBusinessArea(p.businessId) || (p as any).area || '').toLowerCase().trim();
+        return area === targetArea;
+      });
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const area = (getBusinessArea(p.businessId) || (p as any).area || '').toLowerCase().trim();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          area.includes(q)
+        );
+      });
+    }
     if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
     else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
     else list.sort((a, b) => b.price - a.price);
     return list;
-  }, [products, activeCategory, searchQuery, sortBy]);
+  }, [products, activeCategory, activeArea, searchQuery, sortBy, categories, businessAreaMap]);
 
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category === activeCategory);
-    if (searchQuery) list = list.filter((s) =>
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.description.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    if (activeCategory) {
+      list = list.filter((s) => isCategoryMatch(s.category, activeCategory));
+    }
+    if (activeArea) {
+      const targetArea = activeArea.toLowerCase().trim();
+      list = list.filter((s) => {
+        const area = (getBusinessArea(s.businessId) || (s as any).area || '').toLowerCase().trim();
+        return area === targetArea;
+      });
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((s) => {
+        const area = (getBusinessArea(s.businessId) || (s as any).area || '').toLowerCase().trim();
+        return (
+          s.name.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          area.includes(q)
+        );
+      });
+    }
     if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
     else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
     else list.sort((a, b) => b.price - a.price);
     return list;
-  }, [services, activeCategory, searchQuery, sortBy]);
+  }, [services, activeCategory, activeArea, searchQuery, sortBy, categories, businessAreaMap]);
 
-  const visibleCategories = useMemo(
-    () => categories.filter((c) => c.type === type || c.type === 'both'),
-    [categories, type]
-  );
+  const visibleCategories = useMemo(() => {
+    const rawList = type === 'product' ? products : services;
+    return categories.filter((c) => {
+      if (c.type === type || c.type === 'both') return true;
+      return rawList.some((item) => isCategoryMatch(item.category, c.slug || c.id));
+    });
+  }, [categories, type, products, services]);
+
+  const activeCategoryName = useMemo(() => {
+    if (!activeCategory) return '';
+    const cat = categories.find(
+      (c) =>
+        c.id.toLowerCase() === activeCategory.toLowerCase() ||
+        c.slug.toLowerCase() === activeCategory.toLowerCase() ||
+        c.name.toLowerCase() === activeCategory.toLowerCase()
+    );
+    return cat ? cat.name : activeCategory;
+  }, [categories, activeCategory]);
 
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
   const activeFiltersCount = [activeCategory, searchQuery, activeArea].filter(Boolean).length;
-
-  const categoryMap = useMemo(
-    () => new Map(categories.map((c) => [c.id, c.name])),
-    [categories]
-  );
 
   const resetFilters = () => {
     setActiveCategory('');
@@ -130,10 +235,10 @@ const CatalogContainer = ({
 
       {/* Hero Banner */}
       <div className="fl-hero-banner">
-        <div className="fl-hero-text-outline">
+        <div className="fl-hero-text-top">
           {type === 'product' ? 'PRODUK UMKM' : 'LAYANAN JASA'}
         </div>
-        <div className="fl-hero-text-solid">BANJARSARI</div>
+        <div className="fl-hero-text-main">BANJARSARI</div>
       </div>
 
       {/* Breadcrumb */}
@@ -221,20 +326,26 @@ const CatalogContainer = ({
                 <span className="fl-check-label">Semua</span>
                 <span className="fl-check-count">({currentItems.length})</span>
               </label>
-              {visibleCategories.map((c) => (
-                <label key={c.id} className="fl-check-row">
-                  <input
-                    type="checkbox"
-                    className="fl-checkbox"
-                    checked={activeCategory === c.id}
-                    onChange={() => setActiveCategory(activeCategory === c.id ? '' : c.id)}
-                  />
-                  <span className="fl-check-label">{c.icon} {c.name}</span>
-                </label>
-              ))}
+              {visibleCategories.map((c) => {
+                const isChecked =
+                  activeCategory.toLowerCase() === c.id.toLowerCase() ||
+                  activeCategory.toLowerCase() === c.slug.toLowerCase() ||
+                  activeCategory.toLowerCase() === c.name.toLowerCase();
+                return (
+                  <label key={c.id} className="fl-check-row">
+                    <input
+                      type="checkbox"
+                      className="fl-checkbox"
+                      checked={isChecked}
+                      onChange={() => setActiveCategory(isChecked ? '' : c.slug || c.id)}
+                    />
+                    <span className="fl-check-label">{c.icon} {c.name}</span>
+                  </label>
+                );
+              })}
             </FilterGroup>
 
-            {areas.length > 0 && (
+            {allAreas.length > 0 && (
               <FilterGroup title="Area" count={activeArea ? 1 : 0}>
                 <label className="fl-check-row">
                   <input
@@ -246,13 +357,13 @@ const CatalogContainer = ({
                   />
                   <span className="fl-check-label">Semua Area</span>
                 </label>
-                {areas.map((area) => (
+                {allAreas.map((area) => (
                   <label key={area} className="fl-check-row">
                     <input
                       type="checkbox"
                       className="fl-checkbox"
-                      checked={activeArea === area}
-                      onChange={() => setActiveArea(activeArea === area ? '' : area)}
+                      checked={activeArea.toLowerCase().trim() === area.toLowerCase().trim()}
+                      onChange={() => setActiveArea(activeArea.toLowerCase().trim() === area.toLowerCase().trim() ? '' : area)}
                     />
                     <span className="fl-check-label">{area}</span>
                   </label>
@@ -304,7 +415,7 @@ const CatalogContainer = ({
               <div className="fl-active-filters">
                 {activeCategory && (
                   <button className="fl-pill" onClick={() => setActiveCategory('')}>
-                    {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
+                    {activeCategoryName} <span>x</span>
                   </button>
                 )}
                 {activeArea && (
@@ -333,10 +444,20 @@ const CatalogContainer = ({
               <div className="fl-grid">
                 {type === 'product'
                   ? filteredProducts.map((p) => (
-                      <ProductCard key={p.id} product={p} businessName={getBusinessName(p.businessId)} />
+                      <ProductCard
+                        key={p.id}
+                        product={p}
+                        businessName={getBusinessName(p.businessId)}
+                        businessArea={getBusinessArea(p.businessId)}
+                      />
                     ))
                   : filteredServices.map((s) => (
-                      <ServiceCard key={s.id} service={s} businessName={getBusinessName(s.businessId)} />
+                      <ServiceCard
+                        key={s.id}
+                        service={s}
+                        businessName={getBusinessName(s.businessId)}
+                        businessArea={getBusinessArea(s.businessId)}
+                      />
                     ))}
               </div>
             )}
@@ -355,20 +476,24 @@ const CatalogContainer = ({
             repeating-linear-gradient(90deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px),
             repeating-linear-gradient(0deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px);
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 48px 24px; gap: 0; overflow: hidden;
+          padding: 48px 24px; gap: 4px; overflow: hidden;
         }
-        .fl-hero-text-outline {
+        .fl-hero-text-top {
           font-family: var(--font-display);
-          font-size: clamp(40px, 8vw, 96px);
-          font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-          color: transparent; -webkit-text-stroke: 2px rgba(170, 220, 171, 0.6);
+          font-size: clamp(34px, 7vw, 76px);
+          font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+          color: #FFFFFF;
+          text-shadow: 0 4px 16px rgba(0,0,0,0.3);
           line-height: 1; text-align: center;
         }
-        .fl-hero-text-solid {
+        .fl-hero-text-main {
           font-family: var(--font-display);
-          font-size: clamp(24px, 4vw, 56px);
-          font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-          color: #AADCAB; line-height: 1.1; text-align: center;
+          font-size: clamp(24px, 4.5vw, 52px);
+          font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase;
+          background: linear-gradient(135deg, #CDFF00 0%, #AADCAB 100%);
+          -webkit-background-clip: text; background-clip: text;
+          color: transparent; line-height: 1.1; text-align: center;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
         }
 
         /* Breadcrumb */
@@ -389,6 +514,12 @@ const CatalogContainer = ({
           font-size: clamp(18px, 2.5vw, 28px);
           font-weight: 800; color: #111; letter-spacing: -0.01em;
           text-transform: uppercase; margin: 0;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .fl-page-title::before {
+          content: ''; display: inline-block;
+          width: 4px; height: 22px;
+          background: #05472B; border-radius: 2px;
         }
         .fl-type-tabs { display: flex; border: 1.5px solid #111; overflow: hidden; }
         .fl-type-tab {

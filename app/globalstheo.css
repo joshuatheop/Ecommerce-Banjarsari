@@ -13,10 +13,20 @@
   --color-black:     #000000;
   --color-white:     #FFFFFF;
 
+  /* === Aliases for design system compatibility === */
+  --primary:         var(--color-primary);
+  --secondary:       var(--color-secondary);
+  --dark:            var(--color-dark);
+  --accent-y:        var(--color-accent);
+  --aqua:            var(--color-aqua);
+  --white:           #FFFFFF;
+  --black:           #000000;
+
   /* === Surface & Background === */
   --bg:          #F5FBF5;
   --surface:     #FFFFFF;
   --surface-2:   #EAF5EA;
+  --surface-3:   #D0DFD5;
 
   /* === Text === */
   --text-primary:   #011A0F;
@@ -24,12 +34,17 @@
   --text-muted:     #6B8F78;
 
   /* === Border === */
-  --border:       rgba(5, 71, 43, 0.12);
+  --border:        rgba(5, 71, 43, 0.12);
   --border-strong: rgba(5, 71, 43, 0.22);
+  --line:          rgba(5, 71, 43, 0.08);
+  --line-strong:   rgba(5, 71, 43, 0.16);
 
   /* === Typography === */
   --font-heading: 'JetBrains Mono', ui-monospace, monospace;
   --font-body:    'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-heading);
+  --font-mono:    var(--font-heading);
+  --font-ui:      var(--font-body);
 
   /* === Spacing & Shape === */
   --radius-sm: 6px;
@@ -194,4 +209,30 @@ html {
     box-shadow: 0 0 0 3px rgba(5, 71, 43, 0.12);
   }
   .input::placeholder { color: var(--text-muted); }
+}
+
+/* ============================================================
+   Skeleton Loading Shimmer Animation
+   ============================================================ */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg, #EAEAEA 25%, #F7F7F7 50%, #EAEAEA 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite ease-in-out;
+}
+
+.skeleton-card {
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, rgba(5, 71, 43, 0.12));
+  border-radius: var(--radius-lg, 16px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }

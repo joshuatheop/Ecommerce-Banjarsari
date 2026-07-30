@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { useAuth } from '@/context/AuthContext';
+import LiveSearchBar from './LiveSearchBar';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -37,8 +38,15 @@ export default function Navbar() {
       <div className="container">
         <div className="header-inner">
           {/* Brand */}
-          <Link href="/" className="brand">
-            <div className="brand-mark" />
+          <Link href="/" className="brand" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Image
+              src="/logo-palugada.png"
+              alt="Logo PALUGADA Banjarsari"
+              width={42}
+              height={42}
+              style={{ objectFit: 'contain', display: 'block', flexShrink: 0 }}
+              priority
+            />
             <div>
               PALUGADA
               <small>Banjarsari</small>
@@ -50,29 +58,16 @@ export default function Navbar() {
             <Link href="/" className={pathname === '/' ? 'active' : ''}>
               Beranda
             </Link>
-            <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>
+            <Link href="/katalog" className={pathname.startsWith('/katalog') ? 'active' : ''}>
               Katalog
             </Link>
-            <Link href="/katalog?type=service" className={''}>
-              Layanan Jasa
+            <Link href="/toko" className={pathname.startsWith('/toko') || pathname.startsWith('/bisnis') ? 'active' : ''}>
+              Profil UMKM
             </Link>
           </nav>
 
           {/* Search */}
-          <div className="search-box">
-            <Icons.Search />
-            <input
-              type="text"
-              className="input"
-              placeholder="Cari produk atau layanan..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = (e.target as HTMLInputElement).value.trim();
-                  if (val) window.location.href = `/katalog?search=${encodeURIComponent(val)}`;
-                }
-              }}
-            />
-          </div>
+          <LiveSearchBar />
 
           {/* Auth Section */}
           {!loading && (

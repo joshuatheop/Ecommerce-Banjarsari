@@ -66,6 +66,12 @@ export interface Business {
   instagram?: string;
   facebook?: string;
   socialMediaUrl?: string;
+
+  // Map Coordinates
+  latitude?: number;
+  longitude?: number;
+  Latitude_Coordinate?: number;
+  Longitude_Coordinate?: number;
 }
 
 export interface Category {
@@ -75,3 +81,16 @@ export interface Category {
   icon: string;
   type: 'product' | 'service' | 'both';
 }
+
+export interface Review {
+  id: string;
+  targetId: string;
+  targetType: 'product' | 'service' | 'business';
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+}
+
