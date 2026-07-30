@@ -107,7 +107,7 @@ function BusinessProfile({ params, showToast }) {
                   📍 Peta Banjarsari · Embed
                 </div>
                 <div style={{ position: 'absolute', bottom: 14, right: 14, background: 'var(--surface)', padding: '4px 10px', borderRadius: 4, fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ink-500)' }}>
-                  -8.1734°, 113.7012°
+                  -7.2383°, 107.8367°
                 </div>
               </div>
               <div style={{ padding: 22 }}>

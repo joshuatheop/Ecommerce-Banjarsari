@@ -21,22 +21,41 @@ const COLLECTION = 'bisnis';
 // ============================================================
 
 function toBusiness(id: string, data: Record<string, unknown>): Business {
+  const bName = (data.business_name as string) || (data.name as string) || '';
+  const ownerName = (data.owner_name as string) || (data.owner as string) || '';
+  const bDesc = (data.business_description as string) || (data.description as string) || '';
+  const bAddr = (data.business_address as string) || (data.address as string) || '';
+  const areaName = (data.area_name as string) || (data.area as string) || '';
+  const bPhone = (data.business_phone as string) || (data.whatsapp as string) || '';
+  const logoUrl = (data.business_logo_url as string) || (data.imageUrl as string) || null;
+
   return {
+    id,
+    name: bName,
+    owner: ownerName,
+    description: bDesc,
+    category: (data.category as string) || '',
+    address: bAddr,
+    area: areaName,
+    whatsapp: bPhone,
+    imageUrl: logoUrl || '',
+    status: data.is_active === false ? 'nonaktif' : 'aktif',
+    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+
     business_id:          id,
-    business_logo_url:    (data.business_logo_url as string) ?? null,
-    business_name:        (data.business_name as string) || '',
-    business_description: (data.business_description as string) ?? null,
-    business_address:     (data.business_address as string) ?? null,
-    business_phone:       (data.business_phone as string) ?? null,
+    business_logo_url:    logoUrl,
+    business_name:        bName,
+    business_description: bDesc,
+    business_address:     bAddr,
+    business_phone:       bPhone,
     slug:                 (data.slug as string) || '',
     marketplace:          (data.marketplace as string) ?? null,
-    area_name:            (data.area_name as string) ?? null,
+    area_name:            areaName,
     latitude:             (data.latitude as number) ?? null,
     longitude:            (data.longitude as number) ?? null,
-    owner_name:           (data.owner_name as string) ?? null,
+    owner_name:           ownerName,
     is_active:            (data.is_active as boolean) ?? true,
-    createdAt:            data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-    updatedAt:            data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
     deletedAt:            data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,
   };
 }
@@ -76,10 +95,10 @@ export async function getBisnisById(id: string): Promise<Business | null> {
 // CREATE — Tambah Bisnis Baru
 // ============================================================
 
-export type CreateBisnisPayload = Omit<Business, 'business_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+export type CreateBisnisPayload = Omit<Partial<Business>, 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
 export async function createBisnis(payload: CreateBisnisPayload): Promise<string> {
-  const slug = payload.slug || generateSlug(payload.business_name);
+  const slug = payload.slug || generateSlug(payload.business_name || payload.name || '');
   const ref = await addDoc(collection(db, COLLECTION), {
     ...payload,
     slug,

@@ -11,9 +11,9 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { AnalyticsEvent, EventType } from './types';
+import type { AnalyticsEvent, EventType, ChannelClickType } from './types';
 
-export type { AnalyticsEvent, EventType };
+export type { AnalyticsEvent, EventType, ChannelClickType };
 
 /* ============================================================
    Aggregated result types untuk Dashboard

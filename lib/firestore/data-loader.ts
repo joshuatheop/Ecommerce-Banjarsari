@@ -12,8 +12,8 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { ProdukItem, ServiceItem, Business, Category } from './types';
-import { mockProducts, mockServices, mockBusinesses, mockCategories } from './mock-data';
+import type { Product, Service, Business, Category, Review, ProdukItem, ServiceItem } from './types';
+import { mockProducts, mockServices, mockBusinesses, mockCategories, mockReviews } from './mock-data';
 
 // ============================================================
 // Helper: convert Firestore Timestamp / raw value → Date
@@ -127,7 +127,7 @@ function toCategory(id: string, data: Record<string, unknown>): Category {
 // Fetch functions — gracefully fall back to mock data
 // ============================================================
 
-export async function getProducts(): Promise<ProdukItem[]> {
+export async function getProducts(): Promise<Product[]> {
   try {
     const snap = await getDocs(collection(db, 'produk'));
     const realItems = snap.docs
@@ -144,7 +144,7 @@ export async function getProducts(): Promise<ProdukItem[]> {
   }
 }
 
-export async function getServices(): Promise<ServiceItem[]> {
+export async function getServices(): Promise<Service[]> {
   try {
     const snap = await getDocs(collection(db, 'jasa'));
     const realItems = snap.docs

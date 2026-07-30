@@ -86,8 +86,8 @@ function AdminEdit({ params, showToast }) {
                   </div>
                 </div>
                 <div style={{ padding: 18, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <Field label="Latitude" mono value={(-8.17 + pin.y * 0.0008).toFixed(6)} />
-                  <Field label="Longitude" mono value={(113.70 + pin.x * 0.0008).toFixed(6)} />
+                  <Field label="Latitude" mono value={(-7.238328 + pin.y * 0.0008).toFixed(6)} />
+                  <Field label="Longitude" mono value={(107.836660 + pin.x * 0.0008).toFixed(6)} />
                 </div>
               </div>
             )}

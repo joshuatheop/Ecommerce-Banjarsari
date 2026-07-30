@@ -21,12 +21,18 @@ const COLLECTION = 'kategori';
 // ============================================================
 
 function toCategory(id: string, data: Record<string, unknown>): Category {
+  const cName = (data.category_name as string) || (data.name as string) || '';
+  const cType = (data.category_type as Category['category_type']) || 'PRODUCT';
   return {
+    id,
+    name: cName,
+    slug: (data.slug as string) || '',
+    icon: (data.icon as string) ?? null,
+    type: cType === 'PRODUCT' ? 'product' : 'service',
+
     category_id:   id,
-    category_name: (data.category_name as string) || '',
-    category_type: (data.category_type as Category['category_type']) || 'PRODUCT',
-    slug:          (data.slug as string) || '',
-    icon:          (data.icon as string) ?? null,
+    category_name: cName,
+    category_type: cType,
     is_active:     (data.is_active as boolean) ?? true,
     createdAt:     data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     updatedAt:     data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
@@ -69,10 +75,10 @@ export async function getKategoriById(id: string): Promise<Category | null> {
 // CREATE — Tambah Kategori Baru
 // ============================================================
 
-export type CreateKategoriPayload = Omit<Category, 'category_id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+export type CreateKategoriPayload = Omit<Partial<Category>, 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
 export async function createKategori(payload: CreateKategoriPayload): Promise<string> {
-  const slug = payload.slug || generateSlug(payload.category_name);
+  const slug = payload.slug || generateSlug(payload.category_name || payload.name || '');
   const ref = await addDoc(collection(db, COLLECTION), {
     ...payload,
     slug,

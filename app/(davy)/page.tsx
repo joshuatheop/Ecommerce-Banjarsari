@@ -31,11 +31,11 @@ export default async function Home() {
 
   // Sort and slice top items by name (PBI-05 and PBI-06)
   const topProducts = [...products]
-    .sort((a, b) => a.product_name.localeCompare(b.product_name))
+    .sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0))
     .slice(0, 4);
 
   const topServices = [...services]
-    .sort((a, b) => a.service_name.localeCompare(b.service_name))
+    .sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0))
     .slice(0, 4);
 
   return (
@@ -85,50 +85,177 @@ export default async function Home() {
             </div>
 
             {/* Decorative Card Collage */}
-            <div style={{ position: "relative" }}>
-              <div style={{
-                aspectRatio: "4/5", borderRadius: "var(--radius-xl)", overflow: "hidden",
-                background: "var(--primary)", position: "relative",
-                boxShadow: "var(--shadow-lg)",
-                display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 32
-              }}>
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: `repeating-linear-gradient(135deg, transparent 0 28px, rgba(255,255,255,0.03) 28px 56px)`,
-                }}></div>
-                <div style={{
-                  position: "absolute", top: 24, left: 24, right: 24,
-                  fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--secondary)",
-                  letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", justifyContent: "space-between",
-                }}>
-                  <span>★ KARYA WARGA</span>
-                  <span>Banjarsari &apos;26</span>
-                </div>
+            <div>
+              {topProducts.length > 0 && (
+                <Link
+                  href={`/produk/${topProducts[0].id || (topProducts[0] as any).product_id}`}
+                  style={{
+                    display: "block",
+                    textDecoration: "none",
+                    borderRadius: "var(--radius-xl)",
+                    overflow: "hidden",
+                    boxShadow: "var(--shadow-lg)",
+                    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                    position: "relative",
+                  }}
+                  className="card"
+                >
+                  <div
+                    style={{
+                      aspectRatio: "4/5",
+                      position: "relative",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      padding: "24px",
+                      background: (topProducts[0].imageUrls && topProducts[0].imageUrls[0])
+                        ? `linear-gradient(180deg, rgba(5,71,43,0.6) 0%, rgba(5,71,43,0.92) 100%), url(${topProducts[0].imageUrls[0]}) center/cover no-repeat`
+                        : "var(--primary)",
+                    }}
+                  >
+                    {/* Subtle Grid Pattern Overlay */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: `repeating-linear-gradient(135deg, transparent 0 28px, rgba(255,255,255,0.03) 28px 56px)`,
+                        pointerEvents: "none",
+                      }}
+                    />
 
-                <h3 className="display" style={{ color: "var(--white)", fontSize: 22, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
-                  Menghubungkan UMKM dan mempermudah transaksi tetangga
-                </h3>
-              </div>
+                    {/* Top Header */}
+                    <div
+                      style={{
+                        position: "relative",
+                        zIndex: 2,
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        color: "var(--secondary)",
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span>★ KARYA WARGA</span>
+                      <span>Banjarsari &apos;26</span>
+                    </div>
 
-              {/* Floating trending item card */}
-              <div style={{
-                position: "absolute", right: -16, bottom: 100, width: 260,
-                background: "var(--surface)", borderRadius: 14, padding: 18,
-                boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
-              }}>
-                <div className="label-eyebrow" style={{ marginBottom: 6, color: "var(--primary)" }}>Terpopuler Hari Ini</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>
-                  {businesses[0]?.business_name ?? 'Batik Sari Asih'}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--primary)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
-                    {topProducts[0]?.product_name ?? 'Kain Motif Tulis'}
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
-                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> Unggulan
-                  </span>
-                </div>
-              </div>
+                    {/* Tagline */}
+                    <div style={{ position: "relative", zIndex: 2, margin: "20px 0 auto" }}>
+                      <h3
+                        className="display"
+                        style={{
+                          color: "var(--white)",
+                          fontSize: 22,
+                          fontStyle: "italic",
+                          fontWeight: 500,
+                          lineHeight: 1.2,
+                          margin: 0,
+                          textShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                        }}
+                      >
+                        Menghubungkan UMKM dan mempermudah transaksi tetangga
+                      </h3>
+                    </div>
+
+                    {/* Floating Product Card with Image Thumbnail */}
+                    <div
+                      style={{
+                        position: "relative",
+                        zIndex: 2,
+                        background: "rgba(255, 255, 255, 0.96)",
+                        backdropFilter: "blur(12px)",
+                        borderRadius: "var(--radius-lg)",
+                        padding: 14,
+                        boxShadow: "0 12px 28px rgba(0,0,0,0.3)",
+                        border: "1px solid rgba(255,255,255,0.8)",
+                        display: "flex",
+                        gap: 14,
+                        alignItems: "center",
+                      }}
+                    >
+                      {/* Product Thumbnail Photo */}
+                      {topProducts[0].imageUrls && topProducts[0].imageUrls[0] && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={topProducts[0].imageUrls[0]}
+                          alt={topProducts[0].name}
+                          style={{
+                            width: 72,
+                            height: 72,
+                            borderRadius: 10,
+                            objectFit: "cover",
+                            flexShrink: 0,
+                            border: "1px solid var(--line)",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                          }}
+                        />
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          className="label-eyebrow"
+                          style={{
+                            marginBottom: 2,
+                            color: "var(--primary)",
+                            fontSize: 10,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Icons.Flame style={{ color: "var(--accent-y)", width: 12, height: 12 }} /> Terpopuler Hari Ini
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-display)",
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: "var(--dark)",
+                            lineHeight: 1.25,
+                            marginBottom: 2,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {topProducts[0].name}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, fontWeight: 500 }}>
+                          Oleh: <strong style={{ color: "var(--primary)" }}>{getBusinessName(topProducts[0].businessId || (topProducts[0] as any).business_id || '')}</strong>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            paddingTop: 4,
+                            borderTop: "1px dashed var(--line)",
+                          }}
+                        >
+                          <span style={{ color: "var(--dark)", fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 800 }}>
+                            Rp {topProducts[0].price.toLocaleString("id-ID")}
+                          </span>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                              fontSize: 11,
+                              fontFamily: "var(--font-mono)",
+                              color: "var(--primary)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {topProducts[0].clickCount.toLocaleString("id-ID")} klik <Icons.ArrowRight style={{ width: 12, height: 12 }} />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -295,9 +422,9 @@ export default async function Home() {
           <div className="grid grid-products">
             {featuredProducts.map((product) => (
               <ProductCard
-                key={product.product_id}
+                key={product.id || (product as any).product_id}
                 product={product}
-                businessName={getBusinessName(product.business_id)}
+                businessName={getBusinessName(product.businessId || (product as any).business_id || '')}
               />
             ))}
           </div>
@@ -320,9 +447,9 @@ export default async function Home() {
           <div className="grid grid-products">
             {featuredServices.map((service) => (
               <ServiceCard
-                key={service.service_id}
+                key={service.id || (service as any).service_id}
                 service={service}
-                businessName={getBusinessName(service.business_id)}
+                businessName={getBusinessName(service.businessId || (service as any).business_id || '')}
               />
             ))}
           </div>
