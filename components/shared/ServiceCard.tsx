@@ -1,33 +1,42 @@
 'use client';
 
 import Link from 'next/link';
-import type { Service } from '@/lib/firestore/types';
+import type { Service, ServiceItem } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import { Icons } from './Icons';
 
 interface ServiceCardProps {
-  service: Service;
+  service: Service | ServiceItem | any;
   businessName: string;
   businessArea?: string;
+  categoryName?: string;
 }
 
 const formatPrice = (price: number) => {
+  if (!price) return 'Rp 0';
   const formatted = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   return `Rp ${formatted}`;
 };
 
-const ServiceCard = ({ service, businessName, businessArea }: ServiceCardProps) => {
-  const imageUrl = (service.imageUrls && service.imageUrls[0]) || (service.Gallery_Images && service.Gallery_Images[0]);
+const ServiceCard = ({ service, businessName, businessArea, categoryName }: ServiceCardProps) => {
+  const sId = service.id || service.service_id || '';
+  const sName = service.name || service.service_name || '';
+  const sPriceDisplay = service.priceRange || (typeof getServicePriceDisplay === 'function' && service.price_type ? getServicePriceDisplay(service) : formatPrice(service.price || 0));
+  const sCategory = categoryName || service.category || service.category_id || '';
+  const sClicks = service.clickCount ?? 0;
+
+  const imageUrl = (service.imageUrls && service.imageUrls[0]) || (service.Gallery_Images && service.Gallery_Images[0]) || service.thumbnail_url;
 
   return (
-    <Link href={`/layanan/${service.id}`} className="fl-card">
+    <Link href={`/layanan/${sId}`} className="fl-card">
       {/* Thumbnail */}
       <div className="fl-card-thumb">
         {imageUrl ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={imageUrl} alt={service.name} className="fl-card-img" />
+          <img src={imageUrl} alt={sName} className="fl-card-img" />
         ) : (
           <div className="fl-card-placeholder">
-            <span>{service.category}</span>
+            <span>{sCategory}</span>
           </div>
         )}
         <button
@@ -48,25 +57,23 @@ const ServiceCard = ({ service, businessName, businessArea }: ServiceCardProps) 
       {/* Body */}
       <div className="fl-card-body">
         <div className="fl-card-brand">{businessName}</div>
-        <div className="fl-card-name">{service.name}</div>
+        <div className="fl-card-name">{sName}</div>
         <div className="fl-card-meta">
-          <span className="fl-card-cat">{service.category}</span>
+          <span className="fl-card-cat">{sCategory}</span>
           {businessArea && (
             <span className="fl-card-area" style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 11, color: 'var(--primary)', fontWeight: 600 }}>
               <Icons.MapPin style={{ width: 11, height: 11 }} /> {businessArea}
             </span>
           )}
         </div>
-        <div className="fl-card-price">{service.priceRange || formatPrice(service.price)}</div>
+        <div className="fl-card-price">{sPriceDisplay}</div>
         <div className="fl-card-clicks" suppressHydrationWarning>
           <Icons.Flame style={{ color: '#CDFF00', width: 11, height: 11 }} />
-          {service.clickCount.toLocaleString('id-ID')} klik
+          {sClicks.toLocaleString('id-ID')} klik
         </div>
       </div>
-
     </Link>
   );
 };
 
 export default ServiceCard;
-

@@ -1,4 +1,4 @@
-import type { Product, Service, Business, Category } from './types';
+import type { Product, Service, Business, Category, Review } from './types';
 
 // ============================================================
 // Mock Data — untuk fallback / development tanpa Firebase
@@ -13,28 +13,39 @@ export const mockAreas = [
 ];
 
 export const mockCategories: Category[] = [
-  { id: '1', name: 'Makanan & Minuman', slug: 'makanan', icon: '🍚', type: 'product' },
-  { id: '2', name: 'Kerajinan Tangan', slug: 'kerajinan', icon: '🧺', type: 'product' },
-  { id: '3', name: 'Camilan', slug: 'camilan', icon: '🥨', type: 'product' },
-  { id: '4', name: 'Pakaian & Fashion', slug: 'fashion', icon: '👗', type: 'product' },
-  { id: '5', name: 'Jasa Reparasi', slug: 'reparasi-elektronik', icon: '🔧', type: 'service' },
-  { id: '6', name: 'Kecantikan', slug: 'kecantikan', icon: '💇', type: 'service' },
-  { id: '7', name: 'Pendidikan', slug: 'pendidikan', icon: '📚', type: 'service' },
-  { id: '8', name: 'Pertanian', slug: 'pertanian', icon: '🌱', type: 'product' },
+  { id: '1', category_id: '1', name: 'Makanan & Minuman', category_name: 'Makanan & Minuman', category_type: 'PRODUCT', slug: 'makanan', icon: '🍚', type: 'product', is_active: true },
+  { id: '2', category_id: '2', name: 'Kerajinan Tangan',  category_name: 'Kerajinan Tangan',  category_type: 'PRODUCT', slug: 'kerajinan', icon: '🧺', type: 'product', is_active: true },
+  { id: '3', category_id: '3', name: 'Camilan',           category_name: 'Camilan',           category_type: 'PRODUCT', slug: 'camilan', icon: '🥨', type: 'product', is_active: true },
+  { id: '4', category_id: '4', name: 'Pakaian & Fashion', category_name: 'Pakaian & Fashion', category_type: 'PRODUCT', slug: 'fashion', icon: '👗', type: 'product', is_active: true },
+  { id: '5', category_id: '5', name: 'Jasa Reparasi',     category_name: 'Jasa Reparasi',     category_type: 'SERVICE', slug: 'reparasi-elektronik', icon: '🔧', type: 'service', is_active: true },
+  { id: '6', category_id: '6', name: 'Kecantikan',        category_name: 'Kecantikan',        category_type: 'SERVICE', slug: 'kecantikan', icon: '💇', type: 'service', is_active: true },
+  { id: '7', category_id: '7', name: 'Pendidikan',        category_name: 'Pendidikan',        category_type: 'SERVICE', slug: 'pendidikan', icon: '📚', type: 'service', is_active: true },
+  { id: '8', category_id: '8', name: 'Pertanian',         category_name: 'Pertanian',         category_type: 'PRODUCT', slug: 'pertanian', icon: '🌱', type: 'product', is_active: true },
 ];
 
 export const mockBusinesses: Business[] = [
   {
     id: 'b1',
+    business_id: 'b1',
     name: 'Batik Sari Asih',
+    business_name: 'Batik Sari Asih',
     owner: 'Ibu Sri Wahyuni',
+    owner_name: 'Ibu Sri Wahyuni',
     description: 'Pengrajin batik tulis tradisional khas Banjarsari dengan motif unik warisan leluhur.',
+    business_description: 'Pengrajin batik tulis tradisional khas Banjarsari dengan motif unik warisan leluhur.',
     category: 'kerajinan',
     address: 'Jl. Melati No. 12, Banjarsari',
+    business_address: 'Jl. Melati No. 12, Banjarsari',
     area: 'Banjarsari Utara',
+    area_name: 'Banjarsari Utara',
     whatsapp: '628123456789',
+    business_phone: '628123456789',
     imageUrl: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&auto=format&fit=crop&q=80',
+    business_logo_url: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&auto=format&fit=crop&q=80',
+    slug: 'batik-sari-asih',
+    marketplace: null,
     status: 'aktif',
+    is_active: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     instagram: 'batiksari_banjarsari',
@@ -47,15 +58,26 @@ export const mockBusinesses: Business[] = [
   },
   {
     id: 'b2',
+    business_id: 'b2',
     name: 'Dapur Mak Inah',
+    business_name: 'Dapur Mak Inah',
     owner: 'Ibu Suminah',
+    owner_name: 'Ibu Suminah',
     description: 'Produksi aneka masakan rumahan dan camilan tradisional. Tersedia untuk pesanan catering.',
+    business_description: 'Produksi aneka masakan rumahan dan camilan tradisional. Tersedia untuk pesanan catering.',
     category: 'makanan',
     address: 'Jl. Kenanga No. 5, Banjarsari',
+    business_address: 'Jl. Kenanga No. 5, Banjarsari',
     area: 'Banjarsari Selatan',
+    area_name: 'Banjarsari Selatan',
     whatsapp: '628234567890',
+    business_phone: '628234567890',
     imageUrl: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=800&auto=format&fit=crop&q=80',
+    business_logo_url: 'https://images.unsplash.com/photo-1626132647523-66f5bf380027?w=800&auto=format&fit=crop&q=80',
+    slug: 'dapur-mak-inah',
+    marketplace: null,
     status: 'aktif',
+    is_active: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     instagram: 'dapurmakinah_banjarsari',
@@ -68,15 +90,26 @@ export const mockBusinesses: Business[] = [
   },
   {
     id: 'b3',
+    business_id: 'b3',
     name: 'Servis Elektronik Pak Budi',
+    business_name: 'Servis Elektronik Pak Budi',
     owner: 'Budi Santoso',
+    owner_name: 'Budi Santoso',
     description: 'Melayani servis berbagai jenis elektronik: HP, laptop, TV, kulkas, AC.',
+    business_description: 'Melayani servis berbagai jenis elektronik: HP, laptop, TV, kulkas, AC.',
     category: 'reparasi-elektronik',
     address: 'Jl. Anggrek No. 8, Banjarsari',
+    business_address: 'Jl. Anggrek No. 8, Banjarsari',
     area: 'Banjarsari Barat',
+    area_name: 'Banjarsari Barat',
     whatsapp: '628345678901',
+    business_phone: '628345678901',
     imageUrl: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=800&auto=format&fit=crop&q=80',
+    business_logo_url: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=800&auto=format&fit=crop&q=80',
+    slug: 'servis-elektronik-pak-budi',
+    marketplace: null,
     status: 'aktif',
+    is_active: true,
     createdAt: new Date(),
     updatedAt: new Date(),
     instagram: 'budiservice_banjarsari',
@@ -243,7 +276,7 @@ export const mockServices: Service[] = [
   },
 ];
 
-export const mockReviews: import('./types').Review[] = [
+export const mockReviews: Review[] = [
   {
     id: 'r1',
     targetId: 'p1',
@@ -295,4 +328,3 @@ export const mockReviews: import('./types').Review[] = [
     createdAt: new Date('2026-07-26T11:45:00Z'),
   },
 ];
-

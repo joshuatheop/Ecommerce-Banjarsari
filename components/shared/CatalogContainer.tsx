@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import type { Product, Service, Business, Category } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import ProductCard from './ProductCard';
 import ServiceCard from './ServiceCard';
 import { Icons } from './Icons';
@@ -75,13 +76,13 @@ const CatalogContainer = ({
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const businessMap = useMemo(
-    () => new Map(businesses.map((b) => [b.id, b.name])),
+    () => new Map(businesses.map((b) => [b.id || (b as any).business_id, b.name || (b as any).business_name])),
     [businesses]
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
   const businessAreaMap = useMemo(
-    () => new Map(businesses.map((b) => [b.id, b.area])),
+    () => new Map(businesses.map((b) => [b.id || (b as any).business_id, b.area || (b as any).area_name])),
     [businesses]
   );
   const getBusinessArea = (id: string) => businessAreaMap.get(id) || '';
@@ -89,7 +90,10 @@ const CatalogContainer = ({
   const allAreas = useMemo(() => {
     const set = new Set<string>();
     (areas || []).forEach((a) => { if (a && a.trim()) set.add(a.trim()); });
-    businesses.forEach((b) => { if (b.area && b.area.trim()) set.add(b.area.trim()); });
+    businesses.forEach((b) => {
+      const areaName = b.area || (b as any).area_name;
+      if (areaName && areaName.trim()) set.add(areaName.trim());
+    });
     return Array.from(set);
   }, [areas, businesses]);
 
@@ -112,30 +116,30 @@ const CatalogContainer = ({
     }
 
     const matchedCategory = categories.find((c) => {
-      const cId = normalize(c.id);
-      const cSlug = normalize(c.slug);
-      const cName = normalize(c.name);
+      const cId = normalize(c.id || (c as any).category_id || '');
+      const cSlug = normalize(c.slug || '');
+      const cName = normalize(c.name || (c as any).category_name || '');
       return (
-        cId === targetNorm ||
-        cSlug === targetNorm ||
-        cName === targetNorm ||
-        targetNorm.includes(cSlug) ||
-        targetNorm.includes(cId)
+        (cId && cId === targetNorm) ||
+        (cSlug && cSlug === targetNorm) ||
+        (cName && cName === targetNorm) ||
+        (cSlug && targetNorm.includes(cSlug)) ||
+        (cId && targetNorm.includes(cId))
       );
     });
 
     if (matchedCategory) {
-      const cId = normalize(matchedCategory.id);
-      const cSlug = normalize(matchedCategory.slug);
-      const cName = normalize(matchedCategory.name);
+      const cId = normalize(matchedCategory.id || (matchedCategory as any).category_id || '');
+      const cSlug = normalize(matchedCategory.slug || '');
+      const cName = normalize(matchedCategory.name || (matchedCategory as any).category_name || '');
 
       return (
-        itemNorm === cId ||
-        itemNorm === cSlug ||
-        itemNorm === cName ||
-        itemNorm.includes(cSlug) ||
-        cSlug.includes(itemNorm) ||
-        itemNorm.includes(cId)
+        (cId && itemNorm === cId) ||
+        (cSlug && itemNorm === cSlug) ||
+        (cName && itemNorm === cName) ||
+        (cSlug && itemNorm.includes(cSlug)) ||
+        (cSlug && cSlug.includes(itemNorm)) ||
+        (cId && itemNorm.includes(cId))
       );
     }
 
@@ -171,6 +175,7 @@ const CatalogContainer = ({
     return list;
   }, [products, activeCategory, activeArea, searchQuery, sortBy, categories, businessAreaMap]);
 
+  // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
     if (activeCategory) {
@@ -203,8 +208,9 @@ const CatalogContainer = ({
   const visibleCategories = useMemo(() => {
     const rawList = type === 'product' ? products : services;
     return categories.filter((c) => {
-      if (c.type === type || c.type === 'both') return true;
-      return rawList.some((item) => isCategoryMatch(item.category, c.slug || c.id));
+      const cType = c.type || (c.category_type === 'PRODUCT' ? 'product' : c.category_type === 'SERVICE' ? 'service' : 'both');
+      if (cType === type || cType === 'both') return true;
+      return rawList.some((item) => isCategoryMatch((item as any).category || (item as any).category_id, c.slug || (c as any).id || (c as any).category_id));
     });
   }, [categories, type, products, services]);
 
@@ -212,11 +218,13 @@ const CatalogContainer = ({
     if (!activeCategory) return '';
     const cat = categories.find(
       (c) =>
-        c.id.toLowerCase() === activeCategory.toLowerCase() ||
-        c.slug.toLowerCase() === activeCategory.toLowerCase() ||
-        c.name.toLowerCase() === activeCategory.toLowerCase()
+        (c.id && c.id.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.category_id && c.category_id.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.slug && c.slug.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.name && c.name.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.category_name && c.category_name.toLowerCase() === activeCategory.toLowerCase())
     );
-    return cat ? cat.name : activeCategory;
+    return cat ? (cat.name || cat.category_name || activeCategory) : activeCategory;
   }, [categories, activeCategory]);
 
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
@@ -327,19 +335,22 @@ const CatalogContainer = ({
                 <span className="fl-check-count">({currentItems.length})</span>
               </label>
               {visibleCategories.map((c) => {
+                const cId = c.id || (c as any).category_id || '';
+                const cSlug = c.slug || '';
+                const cName = c.name || (c as any).category_name || '';
                 const isChecked =
-                  activeCategory.toLowerCase() === c.id.toLowerCase() ||
-                  activeCategory.toLowerCase() === c.slug.toLowerCase() ||
-                  activeCategory.toLowerCase() === c.name.toLowerCase();
+                  (cId && activeCategory.toLowerCase() === cId.toLowerCase()) ||
+                  (cSlug && activeCategory.toLowerCase() === cSlug.toLowerCase()) ||
+                  (cName && activeCategory.toLowerCase() === cName.toLowerCase());
                 return (
-                  <label key={c.id} className="fl-check-row">
+                  <label key={cId || cName} className="fl-check-row">
                     <input
                       type="checkbox"
                       className="fl-checkbox"
                       checked={isChecked}
-                      onChange={() => setActiveCategory(isChecked ? '' : c.slug || c.id)}
+                      onChange={() => setActiveCategory(isChecked ? '' : cSlug || cId)}
                     />
-                    <span className="fl-check-label">{c.icon} {c.name}</span>
+                    <span className="fl-check-label">{c.icon} {cName}</span>
                   </label>
                 );
               })}

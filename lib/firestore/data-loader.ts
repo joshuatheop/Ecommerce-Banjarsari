@@ -1,10 +1,10 @@
-import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, doc, getDoc, updateDoc, increment, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Product, Service, Business, Category, Review } from './types';
+import type { Product, Service, Business, Category, Review, ProdukItem, ServiceItem } from './types';
 import { mockProducts, mockServices, mockBusinesses, mockCategories, mockReviews } from './mock-data';
 
 // ============================================================
-// Helper: convert Firestore doc to typed object
+// Helper: convert Firestore doc → typed objects
 // ============================================================
 
 function toDate(val: any): Date {
@@ -181,10 +181,22 @@ function toBusiness(id: string, data: Record<string, unknown>): Business {
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
 
-    // PBI-13 fields (fallback/aliases)
+    // PBI-13 fields & v2 aliases
     instagram: (data.instagram_url as string) || (data.instagram as string) || '',
     facebook: (data.facebook_url as string) || (data.facebook as string) || '',
     socialMediaUrl: (data.instagram_url as string) || (data.facebook_url as string) || (data.socialMediaUrl as string) || '',
+
+    business_id: id,
+    business_logo_url: imageUrl,
+    business_name: name,
+    business_description: description,
+    business_address: address,
+    business_phone: whatsapp,
+    slug: (data.slug as string) || '',
+    marketplace: (data.marketplace as string) ?? null,
+    area_name: area,
+    owner_name: owner,
+    is_active: data.is_active === false ? false : true,
 
     // Coordinates
     latitude: lat,
@@ -197,13 +209,19 @@ function toBusiness(id: string, data: Record<string, unknown>): Business {
 function toCategory(id: string, data: Record<string, unknown>): Category {
   const catType = (data.category_type as string) || 'PRODUCT';
   const type = catType === 'PRODUCT' ? 'product' : catType === 'SERVICE' ? 'service' : 'both';
+  const catName = (data.category_name as string) || (data.name as string) || '';
 
   return {
     id,
-    name: (data.category_name as string) || '',
+    name: catName,
     slug: (data.slug as string) || '',
     icon: (data.icon as string) || '',
     type,
+
+    category_id: id,
+    category_name: catName,
+    category_type: catType as any,
+    is_active: data.is_active === false ? false : true,
   };
 }
 
@@ -379,13 +397,49 @@ export async function getServicesByBusiness(businessId: string): Promise<Service
 }
 
 // ============================================================
-// Review / Ulasan Functions
 // ============================================================
+// Review / Ulasan Functions (Persisted in Firestore & LocalStorage Fallback)
+// ============================================================
+
+const LOCAL_STORAGE_REVIEWS_KEY = 'palugada_saved_reviews';
+
+function getLocalStoredReviews(): Review[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_REVIEWS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map((item: any) => ({
+          ...item,
+          createdAt: new Date(item.createdAt),
+        }))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalReview(review: Review) {
+  if (typeof window === 'undefined') return;
+  try {
+    const current = getLocalStoredReviews();
+    const updated = [review, ...current.filter((r) => r.id !== review.id)];
+    localStorage.setItem(LOCAL_STORAGE_REVIEWS_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.error('Failed to save review in localStorage:', err);
+  }
+}
 
 export async function getReviews(
   targetId: string,
   targetType: 'product' | 'service' | 'business'
 ): Promise<Review[]> {
+  const localList = getLocalStoredReviews().filter(
+    (r) => r.targetId === targetId && r.targetType === targetType
+  );
+
+  let firestoreList: Review[] = [];
   try {
     const q = query(
       collection(db, 'ulasan'),
@@ -394,7 +448,7 @@ export async function getReviews(
     );
     const snap = await getDocs(q);
     if (!snap.empty) {
-      const list = snap.docs.map((docSnap) => {
+      firestoreList = snap.docs.map((docSnap) => {
         const data = docSnap.data();
         return {
           id: docSnap.id,
@@ -408,16 +462,23 @@ export async function getReviews(
           createdAt: toDate(data.createdAt),
         };
       });
-      // Sort newest first
-      return list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     }
   } catch (error) {
-    console.error('Error fetching reviews:', error);
+    console.error('Error fetching reviews from Firestore:', error);
   }
-  // Fallback mock reviews
-  return mockReviews.filter(
+
+  const mockList = mockReviews.filter(
     (r) => r.targetId === targetId && r.targetType === targetType
   );
+
+  // Combine mock, local storage, and firestore reviews (deduplicated by ID)
+  const combinedMap = new Map<string, Review>();
+  mockList.forEach((r) => combinedMap.set(r.id, r));
+  localList.forEach((r) => combinedMap.set(r.id, r));
+  firestoreList.forEach((r) => combinedMap.set(r.id, r));
+
+  const result = Array.from(combinedMap.values());
+  return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 export async function addReview(
@@ -428,23 +489,26 @@ export async function addReview(
     createdAt: new Date(),
   };
 
+  let createdReview: Review;
+
   try {
     const docRef = await addDoc(collection(db, 'ulasan'), newReviewDoc);
-    return {
+    createdReview = {
       id: docRef.id,
       ...newReviewDoc,
     };
   } catch (error) {
     console.error('Error adding review to Firestore:', error);
     const mockId = 'rev_' + Date.now();
-    const created = {
+    createdReview = {
       id: mockId,
       ...newReviewDoc,
     };
-    mockReviews.unshift(created);
-    return created;
+    mockReviews.unshift(createdReview);
   }
+
+  // Always persist review locally so it remains intact across page refreshes
+  saveLocalReview(createdReview);
+
+  return createdReview;
 }
-
-
-
