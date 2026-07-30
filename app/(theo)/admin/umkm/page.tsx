@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAllBisnis, deleteBisnis } from '@/lib/firestore/bisnis';
+import { getAllBisnis, deleteBisnis, updateBisnis } from '@/lib/firestore/bisnis';
 import type { Business } from '@/lib/firestore/types';
 import styles from './umkm.module.css';
 
@@ -18,13 +18,15 @@ export default function AdminUmkmPage() {
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     const data = await getAllBisnis();
     const visible = data.filter((b) => !b.deletedAt);
     setBusinesses(visible);
-    setFiltered(visible);
+    setFiltered(visible.filter((b) => b.is_active));
     setLoading(false);
   }, []);
 
@@ -34,7 +36,8 @@ export default function AdminUmkmPage() {
 
   // Filter logic
   useEffect(() => {
-    let result = businesses;
+    const base = businesses.filter((b) => showArchived ? !b.is_active : b.is_active);
+    let result = base;
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter(
@@ -49,7 +52,7 @@ export default function AdminUmkmPage() {
     }
     setFiltered(result);
     setSelected([]);
-  }, [search, filterArea, businesses]);
+  }, [search, filterArea, businesses, showArchived]);
 
   // Distinct areas for filter dropdown
   const uniqueAreas = Array.from(
@@ -66,13 +69,26 @@ export default function AdminUmkmPage() {
     setDeleting(true);
     try {
       await deleteBisnis(deleteTarget.business_id);
-      showToast(`UMKM "${deleteTarget.business_name}" berhasil dinonaktifkan.`, true);
+      showToast(`UMKM "${deleteTarget.business_name}" berhasil dihapus secara permanen.`, true);
       setDeleteTarget(null);
       await loadData();
     } catch {
       showToast('Gagal menghapus UMKM.', false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRestore = async (b: Business) => {
+    setRestoring(b.business_id);
+    try {
+      await updateBisnis(b.business_id, { is_active: true });
+      showToast(`UMKM "${b.business_name}" berhasil diaktifkan kembali.`, true);
+      await loadData();
+    } catch {
+      showToast('Gagal mengaktifkan UMKM.', false);
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -92,6 +108,22 @@ export default function AdminUmkmPage() {
           <h1 className={styles.title}>UMKM &amp; Penyedia Jasa</h1>
         </div>
         <div className={styles.headerActions}>
+          <button
+            id="btn-lihat-arsip-umkm"
+            className={styles.btnSecondary}
+            onClick={() => { setShowArchived((v) => !v); setSearch(''); setFilterArea(''); }}
+            style={{ marginRight: '4px' }}
+          >
+            {showArchived ? '◀ Kembali ke Aktif' : '🗂 Lihat Diarsipkan'}
+          </button>
+          <button
+            id="btn-import-umkm"
+            className={styles.btnSecondary}
+            onClick={() => router.push('/admin/umkm/import')}
+            style={{ marginRight: '4px' }}
+          >
+            📥 Import Excel/CSV
+          </button>
           <button
             id="btn-tambah-umkm"
             className={styles.btnPrimary}
@@ -163,90 +195,108 @@ export default function AdminUmkmPage() {
         </div>
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    checked={allChecked}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
-                <th>Nama Usaha</th>
-                <th>Dusun / Area</th>
-                <th>No. Telepon</th>
-                <th>Status</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((b) => (
-                <tr key={b.business_id} className={styles.tableRow}>
-                  <td>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(b.business_id)}
-                      onChange={(e) => toggleSelect(b.business_id, e.target.checked)}
+                      checked={allChecked}
+                      onChange={(e) => toggleAll(e.target.checked)}
                     />
-                  </td>
-                  <td className={styles.tdProduk}>
-                    <div className={styles.produkCell}>
-                      {b.business_logo_url ? (
-                        <img
-                          className={styles.thumbnail}
-                          src={b.business_logo_url}
-                          alt={b.business_name}
-                        />
-                      ) : (
-                        <div className={styles.thumbPlaceholder}>
-                          {b.business_name[0]?.toUpperCase() ?? 'U'}
+                  </th>
+                  <th>Nama Usaha</th>
+                  <th>Dusun / Area</th>
+                  <th>No. Telepon</th>
+                  <th>Status</th>
+                  <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((b) => (
+                  <tr key={b.business_id} className={styles.tableRow}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(b.business_id)}
+                        onChange={(e) => toggleSelect(b.business_id, e.target.checked)}
+                      />
+                    </td>
+                    <td className={styles.tdProduk}>
+                      <div className={styles.produkCell}>
+                        {b.business_logo_url ? (
+                          <img
+                            className={styles.thumbnail}
+                            src={b.business_logo_url}
+                            alt={b.business_name}
+                          />
+                        ) : (
+                          <div className={styles.thumbPlaceholder}>
+                            {b.business_name[0]?.toUpperCase() ?? 'U'}
+                          </div>
+                        )}
+                        <div>
+                          <div className={styles.produkName}>{b.business_name}</div>
+                          {b.owner_name && (
+                            <div className={styles.produkDesc}>oleh {b.owner_name}</div>
+                          )}
                         </div>
-                      )}
-                      <div>
-                        <div className={styles.produkName}>{b.business_name}</div>
-                        {b.owner_name && (
-                          <div className={styles.produkDesc}>oleh {b.owner_name}</div>
+                      </div>
+                    </td>
+                    <td>{b.area_name ?? '—'}</td>
+                    <td className={styles.mono}>{b.business_phone ?? '—'}</td>
+                    <td>
+                      <span className={b.is_active ? styles.tagKategori : styles.tagRange}>
+                        {b.is_active ? '● Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionGroup}>
+                        {showArchived ? (
+                          <button
+                            id={`btn-restore-${b.business_id}`}
+                            className={styles.kebab}
+                            onClick={() => handleRestore(b)}
+                            disabled={restoring === b.business_id}
+                            title="Aktifkan Kembali"
+                          >
+                            {restoring === b.business_id ? '⏳' : '♻️'}
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              id={`btn-edit-${b.business_id}`}
+                              className={styles.kebab}
+                              onClick={() => router.push(`/admin/umkm/${b.business_id}/edit`)}
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              id={`btn-hapus-${b.business_id}`}
+                              className={`${styles.kebab} ${styles.kebabDanger}`}
+                              onClick={() => setDeleteTarget(b)}
+                              title="Hapus"
+                            >
+                              🗑
+                            </button>
+                          </>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td>{b.area_name ?? '—'}</td>
-                  <td className={styles.mono}>{b.business_phone ?? '—'}</td>
-                  <td>
-                    <span className={b.is_active ? styles.tagKategori : styles.tagRange}>
-                      {b.is_active ? '● Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup}>
-                      <button
-                        id={`btn-edit-${b.business_id}`}
-                        className={styles.kebab}
-                        onClick={() => router.push(`/admin/umkm/${b.business_id}/edit`)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        id={`btn-hapus-${b.business_id}`}
-                        className={`${styles.kebab} ${styles.kebabDanger}`}
-                        onClick={() => setDeleteTarget(b)}
-                        title="Hapus"
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table footer */}
           <div className={styles.tableFoot}>
             <span className={styles.tableCount}>
-              Menampilkan {filtered.length} dari {businesses.length} pelaku usaha
+              {showArchived
+                ? `${filtered.length} UMKM diarsipkan`
+                : `Menampilkan ${filtered.length} dari ${businesses.filter(b => b.is_active).length} pelaku usaha aktif`}
             </span>
           </div>
         </div>
@@ -256,10 +306,9 @@ export default function AdminUmkmPage() {
       {deleteTarget && (
         <div className={styles.modalBackdrop} onClick={() => !deleting && setDeleteTarget(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Nonaktifkan UMKM?</h3>
+            <h3 className={styles.modalTitle}>Hapus UMKM?</h3>
             <p className={styles.modalDesc}>
-              UMKM <strong>&ldquo;{deleteTarget.business_name}&rdquo;</strong> akan dinonaktifkan.
-              Semua produk dan layanan jasa milik usaha ini tidak akan tampil di katalog publik.
+              UMKM <strong>&ldquo;{deleteTarget.business_name}&rdquo;</strong> akan dihapus secara permanen dari database.
             </p>
             <div className={styles.modalActions}>
               <button

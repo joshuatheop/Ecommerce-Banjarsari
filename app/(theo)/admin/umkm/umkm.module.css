@@ -194,9 +194,15 @@
   box-shadow: var(--shadow-sm);
 }
 
+.tableScroll {
+  overflow-x: auto;
+  width: 100%;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 900px;
 }
 
 .table thead tr {

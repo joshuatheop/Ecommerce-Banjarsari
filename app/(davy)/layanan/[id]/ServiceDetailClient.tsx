@@ -22,9 +22,11 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
       trackClickEvent('view_item', {
         itemName: service.service_name,
         businessName: business?.business_name || 'UMKM Banjarsari',
+        serviceId: service.service_id,
+        businessId: service.business_id,
       });
     }
-  }, [service.service_id, service.service_name, business?.business_name]);
+  }, [service.service_id, service.service_name, service.business_id, business?.business_name]);
 
   const priceDisplay = getServicePriceDisplay(service);
 
@@ -36,6 +38,8 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
       itemName: service.service_name,
       businessName: business?.business_name || 'UMKM Banjarsari',
       waNumber,
+      serviceId: service.service_id,
+      businessId: service.business_id,
     });
     await incrementServiceClicks(service.service_id);
 
@@ -54,6 +58,8 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
       itemName: service.service_name,
       businessName: business?.business_name || 'UMKM Banjarsari',
       marketplaceUrl: url,
+      serviceId: service.service_id,
+      businessId: service.business_id,
     });
     await incrementServiceClicks(service.service_id);
 

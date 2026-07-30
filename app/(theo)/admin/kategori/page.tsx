@@ -154,78 +154,74 @@ export default function AdminKategoriPage() {
         </div>
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    checked={allChecked}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
-                <th>Kategori</th>
-                <th>Tipe Kategori</th>
-                <th>Slug URL</th>
-                <th>Status</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((k) => (
-                <tr key={k.category_id} className={styles.tableRow}>
-                  <td>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(k.category_id)}
-                      onChange={(e) => toggleSelect(k.category_id, e.target.checked)}
+                      checked={allChecked}
+                      onChange={(e) => toggleAll(e.target.checked)}
                     />
-                  </td>
-                  <td className={styles.tdProduk}>
-                    <div className={styles.produkCell}>
-                      <div className={styles.thumbPlaceholder}>
-                        {k.icon ?? '📁'}
-                      </div>
-                      <div>
-                        <div className={styles.produkName}>{k.category_name}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={styles.tagKategori}>
-                      {k.category_type}
-                    </span>
-                  </td>
-                  <td className={styles.mono}>{k.slug}</td>
-                  <td>
-                    <span className={k.is_active ? styles.tagKategori : styles.tagRange}>
-                      {k.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup}>
-                      <button
-                        id={`btn-edit-${k.category_id}`}
-                        className={styles.kebab}
-                        onClick={() => router.push(`/admin/kategori/${k.category_id}/edit`)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        id={`btn-hapus-${k.category_id}`}
-                        className={`${styles.kebab} ${styles.kebabDanger}`}
-                        onClick={() => setDeleteTarget(k)}
-                        title="Hapus"
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </td>
+                  </th>
+                  <th>Nama Kategori</th>
+                  <th>Tipe</th>
+                  <th>Slug</th>
+                  <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((k) => (
+                  <tr key={k.category_id} className={styles.tableRow}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(k.category_id)}
+                        onChange={(e) => toggleSelect(k.category_id, e.target.checked)}
+                      />
+                    </td>
+                    <td className={styles.tdProduk}>
+                      <div className={styles.produkCell}>
+                        <div className={styles.thumbPlaceholder}>
+                          {k.icon ?? '📁'}
+                        </div>
+                        <div>
+                          <div className={styles.produkName}>{k.category_name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={styles.tagKategori}>
+                        {k.category_type}
+                      </span>
+                    </td>
+                    <td className={styles.mono}>{k.slug}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionGroup}>
+                        <button
+                          id={`btn-edit-${k.category_id}`}
+                          className={styles.kebab}
+                          onClick={() => router.push(`/admin/kategori/${k.category_id}/edit`)}
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          id={`btn-hapus-${k.category_id}`}
+                          className={`${styles.kebab} ${styles.kebabDanger}`}
+                          onClick={() => setDeleteTarget(k)}
+                          title="Hapus"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table footer */}
           <div className={styles.tableFoot}>
@@ -243,7 +239,7 @@ export default function AdminKategoriPage() {
             <h3 className={styles.modalTitle}>Hapus Kategori?</h3>
             <p className={styles.modalDesc}>
               Kategori <strong>&ldquo;{deleteTarget.category_name}&rdquo;</strong> akan
-              dinonaktifkan dan tidak akan muncul di filter pencarian produk/jasa.
+              dihapus secara permanen dari database.
             </p>
             <div className={styles.modalActions}>
               <button

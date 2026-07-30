@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAllJasa, deleteJasa } from '@/lib/firestore/jasa';
+import { getAllJasa, deleteJasa, updateJasa } from '@/lib/firestore/jasa';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
 import type { ServiceItem, Category, Business } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
@@ -22,6 +22,8 @@ export default function AdminJasaPage() {
   const [deleteTarget, setDeleteTarget] = useState<ServiceItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -34,7 +36,7 @@ export default function AdminJasaPage() {
     setJasaList(visible);
     setCategories(cats.filter((c) => c.category_type === 'SERVICE'));
     setBusinesses(bizs);
-    setFiltered(visible);
+    setFiltered(visible.filter((j) => j.is_active));
     setLoading(false);
   }, []);
 
@@ -44,7 +46,8 @@ export default function AdminJasaPage() {
 
   // Filter logic
   useEffect(() => {
-    let result = jasaList;
+    const base = jasaList.filter((j) => showArchived ? !j.is_active : j.is_active);
+    let result = base;
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter(
@@ -58,7 +61,7 @@ export default function AdminJasaPage() {
     }
     setFiltered(result);
     setSelected([]);
-  }, [search, filterKategori, jasaList]);
+  }, [search, filterKategori, jasaList, showArchived]);
 
   const showToast = (msg: string, ok: boolean) => {
     setToast({ msg, ok });
@@ -77,6 +80,19 @@ export default function AdminJasaPage() {
       showToast('Gagal menghapus jasa.', false);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRestore = async (j: ServiceItem) => {
+    setRestoring(j.service_id);
+    try {
+      await updateJasa(j.service_id, { is_active: true });
+      showToast(`"${j.service_name}" berhasil diaktifkan kembali.`, true);
+      await loadData();
+    } catch {
+      showToast('Gagal mengaktifkan jasa.', false);
+    } finally {
+      setRestoring(null);
     }
   };
 
@@ -117,6 +133,22 @@ export default function AdminJasaPage() {
           <h1 className={styles.title}>Katalog Layanan Jasa</h1>
         </div>
         <div className={styles.headerActions}>
+          <button
+            id="btn-lihat-arsip-jasa"
+            className={styles.btnSecondary}
+            onClick={() => { setShowArchived((v) => !v); setSearch(''); setFilterKategori(''); }}
+            style={{ marginRight: '4px' }}
+          >
+            {showArchived ? '◀ Kembali ke Aktif' : '🗂 Lihat Diarsipkan'}
+          </button>
+          <button
+            id="btn-import-jasa"
+            className={styles.btnSecondary}
+            onClick={() => router.push('/admin/jasa/import')}
+            style={{ marginRight: '4px' }}
+          >
+            📥 Import Excel/CSV
+          </button>
           <button
             id="btn-tambah-jasa"
             className={styles.btnPrimary}
@@ -178,109 +210,131 @@ export default function AdminJasaPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className={styles.emptyState}>
-          <div className={styles.emptyIcon}>🛠️</div>
-          <p className={styles.emptyTitle}>Belum ada layanan jasa</p>
+          <div className={styles.emptyIcon}>{showArchived ? '🗂' : '🛠️'}</div>
+          <p className={styles.emptyTitle}>
+            {showArchived ? 'Tidak ada jasa diarsipkan' : 'Belum ada layanan jasa'}
+          </p>
           <p className={styles.emptyDesc}>
             {search || filterKategori
               ? 'Tidak ada hasil yang sesuai filter. Coba ubah pencarian.'
-              : 'Tambahkan layanan jasa pertama untuk memulai.'}
+              : showArchived
+                ? 'Jasa yang dinonaktifkan akan muncul di sini.'
+                : 'Tambahkan layanan jasa pertama untuk memulai.'}
           </p>
         </div>
       ) : (
         <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th style={{ width: 40 }}>
-                  <input
-                    type="checkbox"
-                    checked={allChecked}
-                    onChange={(e) => toggleAll(e.target.checked)}
-                  />
-                </th>
-                <th>Nama Jasa</th>
-                <th>Penyedia / UMKM</th>
-                <th>Kategori</th>
-                <th>Tipe Harga</th>
-                <th>Rentang Harga</th>
-                <th>Ketersediaan</th>
-                <th>Status</th>
-                <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((j) => (
-                <tr key={j.service_id} className={styles.tableRow}>
-                  <td>
+          <div className={styles.tableScroll}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
                     <input
                       type="checkbox"
-                      checked={selected.includes(j.service_id)}
-                      onChange={(e) => toggleSelect(j.service_id, e.target.checked)}
+                      checked={allChecked}
+                      onChange={(e) => toggleAll(e.target.checked)}
                     />
-                  </td>
-                  <td className={styles.tdProduk}>
-                    <div className={styles.produkCell}>
-                      {j.thumbnail_url ? (
-                        <img className={styles.thumbnail} src={j.thumbnail_url} alt={j.service_name} />
-                      ) : (
-                        <div className={styles.thumbPlaceholder}>🛠️</div>
-                      )}
-                      <div>
-                        <div className={styles.produkName}>{j.service_name}</div>
-                        <div className={styles.produkDesc}>
-                          {(j.service_description ?? '').slice(0, 55)}
-                          {(j.service_description ?? '').length > 55 ? '…' : ''}
+                  </th>
+                  <th>Nama Jasa</th>
+                  <th>Penyedia / UMKM</th>
+                  <th>Kategori</th>
+                  <th>Tipe Harga</th>
+                  <th>Rentang Harga</th>
+                  <th>Ketersediaan</th>
+                  <th>Status</th>
+                  <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((j) => (
+                  <tr key={j.service_id} className={styles.tableRow}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(j.service_id)}
+                        onChange={(e) => toggleSelect(j.service_id, e.target.checked)}
+                      />
+                    </td>
+                    <td className={styles.tdProduk}>
+                      <div className={styles.produkCell}>
+                        {j.thumbnail_url ? (
+                          <img className={styles.thumbnail} src={j.thumbnail_url} alt={j.service_name} />
+                        ) : (
+                          <div className={styles.thumbPlaceholder}>🛠️</div>
+                        )}
+                        <div>
+                          <div className={styles.produkName}>{j.service_name}</div>
+                          <div className={styles.produkDesc}>
+                            {(j.service_description ?? '').slice(0, 55)}
+                            {(j.service_description ?? '').length > 55 ? '…' : ''}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>{getBusinessName(j.business_id)}</td>
-                  <td>
-                    <span className={styles.tagKategori}>
-                      {getCategoryName(j.category_id)}
-                    </span>
-                  </td>
-                  <td>{j.price_type}</td>
-                  <td>
-                    <span className={styles.mono} style={{ fontWeight: 600 }}>
-                      {getServicePriceDisplay(j)}
-                    </span>
-                  </td>
-                  <td>{getAvailabilityLabel(j.availability_type)}</td>
-                  <td>
-                    <span className={j.is_active ? styles.tagKategori : styles.tagRange}>
-                      {j.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className={styles.actionGroup}>
-                      <button
-                        id={`btn-edit-${j.service_id}`}
-                        className={styles.kebab}
-                        onClick={() => router.push(`/admin/jasa/${j.service_id}/edit`)}
-                        title="Edit"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        id={`btn-hapus-${j.service_id}`}
-                        className={`${styles.kebab} ${styles.kebabDanger}`}
-                        onClick={() => setDeleteTarget(j)}
-                        title="Hapus"
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td>{getBusinessName(j.business_id)}</td>
+                    <td>
+                      <span className={styles.tagKategori}>
+                        {getCategoryName(j.category_id)}
+                      </span>
+                    </td>
+                    <td>{j.price_type}</td>
+                    <td>
+                      <span className={styles.mono} style={{ fontWeight: 600 }}>
+                        {getServicePriceDisplay(j)}
+                      </span>
+                    </td>
+                    <td>{getAvailabilityLabel(j.availability_type)}</td>
+                    <td>
+                      <span className={j.is_active ? styles.tagKategori : styles.tagRange}>
+                        {j.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className={styles.actionGroup}>
+                        {showArchived ? (
+                          <button
+                            id={`btn-restore-${j.service_id}`}
+                            className={styles.kebab}
+                            onClick={() => handleRestore(j)}
+                            disabled={restoring === j.service_id}
+                            title="Aktifkan Kembali"
+                          >
+                            {restoring === j.service_id ? '⏳' : '♻️'}
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              id={`btn-edit-${j.service_id}`}
+                              className={styles.kebab}
+                              onClick={() => router.push(`/admin/jasa/${j.service_id}/edit`)}
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              id={`btn-hapus-${j.service_id}`}
+                              className={`${styles.kebab} ${styles.kebabDanger}`}
+                              onClick={() => setDeleteTarget(j)}
+                              title="Hapus"
+                            >
+                              🗑
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Table footer */}
           <div className={styles.tableFoot}>
             <span className={styles.tableCount}>
-              Menampilkan {filtered.length} dari {jasaList.length} jasa
+              {showArchived
+                ? `${filtered.length} jasa diarsipkan`
+                : `Menampilkan ${filtered.length} dari ${jasaList.filter(j => j.is_active).length} jasa aktif`}
             </span>
           </div>
         </div>

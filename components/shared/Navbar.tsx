@@ -7,6 +7,8 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { Icons } from './Icons';
 import { useAuth } from '@/context/AuthContext';
 
+import { trackClickEvent } from '@/lib/firestore/analytics';
+
 function NavLinks() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -15,6 +17,17 @@ function NavLinks() {
   const isHomeActive = pathname === '/';
   const isLayananActive = pathname.startsWith('/layanan') || (pathname.startsWith('/katalog') && typeParam === 'service');
   const isKatalogActive = (pathname.startsWith('/katalog') || pathname.startsWith('/produk')) && !isLayananActive;
+
+  useEffect(() => {
+    if (!pathname) return;
+    const queryStr = searchParams ? searchParams.toString() : '';
+    const fullPath = queryStr ? `${pathname}?${queryStr}` : pathname;
+    
+    trackClickEvent('page_view', {
+      itemName: `Halaman: ${pathname}`,
+      marketplaceUrl: fullPath,
+    });
+  }, [pathname, searchParams]);
 
   return (
     <nav className="header-nav">
@@ -62,7 +75,13 @@ export default function Navbar() {
         <div className="header-inner">
           {/* Brand */}
           <Link href="/" className="brand">
-            <div className="brand-mark" />
+            <Image
+              src="/Logo Palugada.png"
+              alt="Logo Palugada"
+              width={36}
+              height={36}
+              style={{ objectFit: 'contain' }}
+            />
             <div>
               PALUGADA
               <small>Banjarsari</small>
