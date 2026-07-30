@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { Icons } from './Icons';
 import { useAuth } from '@/context/AuthContext';
+import LiveSearchBar from './LiveSearchBar';
 
 import { trackClickEvent } from '@/lib/firestore/analytics';
 
@@ -89,31 +90,20 @@ export default function Navbar() {
           </Link>
 
           {/* Nav Links */}
-          <Suspense fallback={
-            <nav className="header-nav">
-              <Link href="/" className={pathname === '/' ? 'active' : ''}>Beranda</Link>
-              <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>Katalog</Link>
-              <Link href="/katalog?type=service">Layanan Jasa</Link>
-            </nav>
-          }>
-            <NavLinks />
-          </Suspense>
+          <nav className="header-nav">
+            <Link href="/" className={pathname === '/' ? 'active' : ''}>
+              Beranda
+            </Link>
+            <Link href="/katalog" className={pathname.startsWith('/katalog') ? 'active' : ''}>
+              Katalog
+            </Link>
+            <Link href="/toko" className={pathname.startsWith('/toko') || pathname.startsWith('/bisnis') ? 'active' : ''}>
+              Profil UMKM
+            </Link>
+          </nav>
 
           {/* Search */}
-          <div className="search-box">
-            <Icons.Search />
-            <input
-              type="text"
-              className="input"
-              placeholder="Cari produk atau layanan..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = (e.target as HTMLInputElement).value.trim();
-                  if (val) window.location.href = `/katalog?search=${encodeURIComponent(val)}`;
-                }
-              }}
-            />
-          </div>
+          <LiveSearchBar />
 
           {/* Auth Section */}
           {!loading && (

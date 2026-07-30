@@ -1,22 +1,22 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import type { ProdukItem, ServiceItem, Business, Category } from '@/lib/firestore/types';
+import { useState, useMemo } from 'react';
+import type { Product, Service, Business, Category } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
 import ProductCard from './ProductCard';
 import ServiceCard from './ServiceCard';
 import { Icons } from './Icons';
 
 interface CatalogContainerProps {
-  products: ProdukItem[];
-  services: ServiceItem[];
+  products: Product[];
+  services: Service[];
   businesses: Business[];
   categories: Category[];
   areas: string[];
   initialType: 'product' | 'service';
   initialQuery: string;
   initialCategory: string;
+  initialArea?: string;
 }
 
 const ChevronDown = ({ open }: { open: boolean }) => (
@@ -66,6 +66,7 @@ const CatalogContainer = ({
   initialType,
   initialQuery,
   initialCategory,
+  initialArea = '',
 }: CatalogContainerProps) => {
   const router = useRouter();
   const [type, setType] = useState<'product' | 'service'>(initialType);
@@ -81,79 +82,166 @@ const CatalogContainer = ({
   };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
+  const [activeArea, setActiveArea] = useState(initialArea);
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const businessMap = useMemo(
-    () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
+    () => new Map(businesses.map((b) => [b.id || (b as any).business_id, b.name || (b as any).business_name])),
     [businesses]
   );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
-  const filteredProducts = useMemo(() => {
-    let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
-    if (searchQuery) list = list.filter((p) =>
-      p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.product_description || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    if (minPrice !== '') {
-      const min = Number(minPrice);
-      if (!isNaN(min)) list = list.filter((p) => p.product_price >= min);
-    }
-    if (maxPrice !== '') {
-      const max = Number(maxPrice);
-      if (!isNaN(max)) list = list.filter((p) => p.product_price <= max);
+  const businessAreaMap = useMemo(
+    () => new Map(businesses.map((b) => [b.id || (b as any).business_id, b.area || (b as any).area_name])),
+    [businesses]
+  );
+  const getBusinessArea = (id: string) => businessAreaMap.get(id) || '';
+
+  const allAreas = useMemo(() => {
+    const set = new Set<string>();
+    (areas || []).forEach((a) => { if (a && a.trim()) set.add(a.trim()); });
+    businesses.forEach((b) => {
+      const areaName = b.area || (b as any).area_name;
+      if (areaName && areaName.trim()) set.add(areaName.trim());
+    });
+    return Array.from(set);
+  }, [areas, businesses]);
+
+  const isCategoryMatch = (itemCategory: string | undefined, targetCat: string) => {
+    if (!targetCat) return true;
+    if (!itemCategory) return false;
+
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const itemClean = itemCategory.trim().toLowerCase();
+    const targetClean = targetCat.trim().toLowerCase();
+
+    if (itemClean === targetClean) return true;
+
+    const itemNorm = normalize(itemCategory);
+    const targetNorm = normalize(targetCat);
+
+    if (itemNorm === targetNorm || itemNorm.includes(targetNorm) || targetNorm.includes(itemNorm)) {
+      return true;
     }
 
-    if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
-    else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
+    const matchedCategory = categories.find((c) => {
+      const cId = normalize(c.id || (c as any).category_id || '');
+      const cSlug = normalize(c.slug || '');
+      const cName = normalize(c.name || (c as any).category_name || '');
+      return (
+        (cId && cId === targetNorm) ||
+        (cSlug && cSlug === targetNorm) ||
+        (cName && cName === targetNorm) ||
+        (cSlug && targetNorm.includes(cSlug)) ||
+        (cId && targetNorm.includes(cId))
+      );
+    });
+
+    if (matchedCategory) {
+      const cId = normalize(matchedCategory.id || (matchedCategory as any).category_id || '');
+      const cSlug = normalize(matchedCategory.slug || '');
+      const cName = normalize(matchedCategory.name || (matchedCategory as any).category_name || '');
+
+      return (
+        (cId && itemNorm === cId) ||
+        (cSlug && itemNorm === cSlug) ||
+        (cName && itemNorm === cName) ||
+        (cSlug && itemNorm.includes(cSlug)) ||
+        (cSlug && cSlug.includes(itemNorm)) ||
+        (cId && itemNorm.includes(cId))
+      );
+    }
+
+    return false;
+  };
+
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
+    if (activeCategory) {
+      list = list.filter((p) => isCategoryMatch(p.category, activeCategory));
+    }
+    if (activeArea) {
+      const targetArea = activeArea.toLowerCase().trim();
+      list = list.filter((p) => {
+        const area = (getBusinessArea(p.businessId) || (p as any).area || '').toLowerCase().trim();
+        return area === targetArea;
+      });
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((p) => {
+        const area = (getBusinessArea(p.businessId) || (p as any).area || '').toLowerCase().trim();
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          area.includes(q)
+        );
+      });
+    }
+    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
+    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else list.sort((a, b) => b.price - a.price);
     return list;
-  }, [products, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
+  }, [products, activeCategory, activeArea, searchQuery, sortBy, categories, businessAreaMap]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
-    if (searchQuery) list = list.filter((s) =>
-      s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.service_description || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    if (minPrice !== '') {
-      const min = Number(minPrice);
-      if (!isNaN(min)) list = list.filter((s) => (s.minimum_price ?? 0) >= min);
+    if (activeCategory) {
+      list = list.filter((s) => isCategoryMatch(s.category, activeCategory));
     }
-    if (maxPrice !== '') {
-      const max = Number(maxPrice);
-      if (!isNaN(max)) list = list.filter((s) => (s.minimum_price ?? 0) <= max);
+    if (activeArea) {
+      const targetArea = activeArea.toLowerCase().trim();
+      list = list.filter((s) => {
+        const area = (getBusinessArea(s.businessId) || (s as any).area || '').toLowerCase().trim();
+        return area === targetArea;
+      });
     }
-
-    if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
-    else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((s) => {
+        const area = (getBusinessArea(s.businessId) || (s as any).area || '').toLowerCase().trim();
+        return (
+          s.name.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q) ||
+          area.includes(q)
+        );
+      });
+    }
+    if (sortBy === 'popular') list.sort((a, b) => b.clickCount - a.clickCount);
+    else if (sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+    else list.sort((a, b) => b.price - a.price);
     return list;
-  }, [services, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
+  }, [services, activeCategory, activeArea, searchQuery, sortBy, categories, businessAreaMap]);
 
-  // Categories visible for current type
-  const visibleCategories = useMemo(
-    () => categories.filter((c) => {
-      const cType = (c.category_type || '').toUpperCase();
-      const targetType = type === 'product' ? 'PRODUCT' : 'SERVICE';
-      return cType === targetType;
-    }),
-    [categories, type]
-  );
+  const visibleCategories = useMemo(() => {
+    const rawList = type === 'product' ? products : services;
+    return categories.filter((c) => {
+      const cType = c.type || (c.category_type === 'PRODUCT' ? 'product' : c.category_type === 'SERVICE' ? 'service' : 'both');
+      if (cType === type || cType === 'both') return true;
+      return rawList.some((item) => isCategoryMatch((item as any).category || (item as any).category_id, c.slug || (c as any).id || (c as any).category_id));
+    });
+  }, [categories, type, products, services]);
+
+  const activeCategoryName = useMemo(() => {
+    if (!activeCategory) return '';
+    const cat = categories.find(
+      (c) =>
+        (c.id && c.id.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.category_id && c.category_id.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.slug && c.slug.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.name && c.name.toLowerCase() === activeCategory.toLowerCase()) ||
+        (c.category_name && c.category_name.toLowerCase() === activeCategory.toLowerCase())
+    );
+    return cat ? (cat.name || cat.category_name || activeCategory) : activeCategory;
+  }, [categories, activeCategory]);
 
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
   const hasPriceFilter = minPrice !== '' || maxPrice !== '';
   const activeFiltersCount = [activeCategory, searchQuery, hasPriceFilter ? 'price' : ''].filter(Boolean).length;
-
-  const categoryMap = useMemo(
-    () => new Map(categories.map((c) => [c.category_id, c.category_name])),
-    [categories]
-  );
 
   const resetFilters = () => {
     setActiveCategory('');
@@ -168,10 +256,10 @@ const CatalogContainer = ({
 
       {/* Hero Banner */}
       <div className="fl-hero-banner">
-        <div className="fl-hero-text-outline">
+        <div className="fl-hero-text-top">
           {type === 'product' ? 'PRODUK UMKM' : 'LAYANAN JASA'}
         </div>
-        <div className="fl-hero-text-solid">BANJARSARI</div>
+        <div className="fl-hero-text-main">BANJARSARI</div>
       </div>
 
       {/* Breadcrumb */}
@@ -259,22 +347,31 @@ const CatalogContainer = ({
                 <span className="fl-check-label">Semua</span>
                 <span className="fl-check-count">({currentItems.length})</span>
               </label>
-              {visibleCategories.map((c) => (
-                <label key={c.category_id} className="fl-check-row">
-                  <input
-                    type="checkbox"
-                    className="fl-checkbox"
-                    checked={activeCategory === c.category_id}
-                    onChange={() => setActiveCategory(activeCategory === c.category_id ? '' : c.category_id)}
-                  />
-                  <span className="fl-check-label">{c.icon} {c.category_name}</span>
-                </label>
-              ))}
+              {visibleCategories.map((c) => {
+                const cId = c.id || (c as any).category_id || '';
+                const cSlug = c.slug || '';
+                const cName = c.name || (c as any).category_name || '';
+                const isChecked =
+                  (cId && activeCategory.toLowerCase() === cId.toLowerCase()) ||
+                  (cSlug && activeCategory.toLowerCase() === cSlug.toLowerCase()) ||
+                  (cName && activeCategory.toLowerCase() === cName.toLowerCase());
+                return (
+                  <label key={cId || cName} className="fl-check-row">
+                    <input
+                      type="checkbox"
+                      className="fl-checkbox"
+                      checked={isChecked}
+                      onChange={() => setActiveCategory(isChecked ? '' : cSlug || cId)}
+                    />
+                    <span className="fl-check-label">{c.icon} {cName}</span>
+                  </label>
+                );
+              })}
             </FilterGroup>
 
-            <FilterGroup title="Rentang Harga" count={hasPriceFilter ? 1 : 0}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {allAreas.length > 0 && (
+              <FilterGroup title="Area" count={activeArea ? 1 : 0}>
+                <label className="fl-check-row">
                   <input
                     id="fl-min-price"
                     type="number"
@@ -284,29 +381,21 @@ const CatalogContainer = ({
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                   />
-                  <span style={{ fontSize: 12, color: '#888' }}>-</span>
-                  <input
-                    id="fl-max-price"
-                    type="number"
-                    placeholder="Max Rp"
-                    className="fl-search-input"
-                    style={{ paddingLeft: 12, fontSize: 13 }}
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                  />
-                </div>
-                {hasPriceFilter && (
-                  <button
-                    type="button"
-                    className="fl-clear-all"
-                    style={{ alignSelf: 'flex-start', marginTop: 2 }}
-                    onClick={() => { setMinPrice(''); setMaxPrice(''); }}
-                  >
-                    Hapus Rentang Harga
-                  </button>
-                )}
-              </div>
-            </FilterGroup>
+                  <span className="fl-check-label">Semua Area</span>
+                </label>
+                {allAreas.map((area) => (
+                  <label key={area} className="fl-check-row">
+                    <input
+                      type="checkbox"
+                      className="fl-checkbox"
+                      checked={activeArea.toLowerCase().trim() === area.toLowerCase().trim()}
+                      onChange={() => setActiveArea(activeArea.toLowerCase().trim() === area.toLowerCase().trim() ? '' : area)}
+                    />
+                    <span className="fl-check-label">{area}</span>
+                  </label>
+                ))}
+              </FilterGroup>
+            )}
           </aside>
 
           {mobileFilterOpen && (
@@ -352,7 +441,7 @@ const CatalogContainer = ({
               <div className="fl-active-filters">
                 {activeCategory && (
                   <button className="fl-pill" onClick={() => setActiveCategory('')}>
-                    {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
+                    {activeCategoryName} <span>x</span>
                   </button>
                 )}
                 {hasPriceFilter && (
@@ -382,18 +471,18 @@ const CatalogContainer = ({
                 {type === 'product'
                   ? filteredProducts.map((p) => (
                       <ProductCard
-                        key={p.product_id}
+                        key={p.id}
                         product={p}
-                        businessName={getBusinessName(p.business_id)}
-                        categoryName={categoryMap.get(p.category_id)}
+                        businessName={getBusinessName(p.businessId)}
+                        businessArea={getBusinessArea(p.businessId)}
                       />
                     ))
                   : filteredServices.map((s) => (
                       <ServiceCard
-                        key={s.service_id}
+                        key={s.id}
                         service={s}
-                        businessName={getBusinessName(s.business_id)}
-                        categoryName={categoryMap.get(s.category_id)}
+                        businessName={getBusinessName(s.businessId)}
+                        businessArea={getBusinessArea(s.businessId)}
                       />
                     ))}
               </div>
@@ -413,20 +502,24 @@ const CatalogContainer = ({
             repeating-linear-gradient(90deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px),
             repeating-linear-gradient(0deg, transparent 0, transparent 80px, rgba(255,255,255,0.03) 80px, rgba(255,255,255,0.03) 81px);
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          padding: 48px 24px; gap: 0; overflow: hidden;
+          padding: 48px 24px; gap: 4px; overflow: hidden;
         }
-        .fl-hero-text-outline {
+        .fl-hero-text-top {
           font-family: var(--font-display);
-          font-size: clamp(40px, 8vw, 96px);
-          font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-          color: transparent; -webkit-text-stroke: 2px rgba(170, 220, 171, 0.6);
+          font-size: clamp(34px, 7vw, 76px);
+          font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+          color: #FFFFFF;
+          text-shadow: 0 4px 16px rgba(0,0,0,0.3);
           line-height: 1; text-align: center;
         }
-        .fl-hero-text-solid {
+        .fl-hero-text-main {
           font-family: var(--font-display);
-          font-size: clamp(24px, 4vw, 56px);
-          font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-          color: #AADCAB; line-height: 1.1; text-align: center;
+          font-size: clamp(24px, 4.5vw, 52px);
+          font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase;
+          background: linear-gradient(135deg, #CDFF00 0%, #AADCAB 100%);
+          -webkit-background-clip: text; background-clip: text;
+          color: transparent; line-height: 1.1; text-align: center;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
         }
 
         /* Breadcrumb */
@@ -447,6 +540,12 @@ const CatalogContainer = ({
           font-size: clamp(18px, 2.5vw, 28px);
           font-weight: 800; color: #111; letter-spacing: -0.01em;
           text-transform: uppercase; margin: 0;
+          display: flex; align-items: center; gap: 10px;
+        }
+        .fl-page-title::before {
+          content: ''; display: inline-block;
+          width: 4px; height: 22px;
+          background: #05472B; border-radius: 2px;
         }
         .fl-type-tabs { display: flex; border: 1.5px solid #111; overflow: hidden; }
         .fl-type-tab {

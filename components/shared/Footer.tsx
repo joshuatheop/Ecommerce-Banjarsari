@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Icons } from './Icons';
 
 export default function Footer() {
@@ -10,7 +11,16 @@ export default function Footer() {
         <div className="footer-inner">
           {/* Brand Column */}
           <div className="footer-brand">
-            <h3>PALUGADA</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <Image
+                src="/logo-palugada.png"
+                alt="Logo PALUGADA Banjarsari"
+                width={48}
+                height={48}
+                style={{ objectFit: 'contain', flexShrink: 0 }}
+              />
+              <h3 style={{ margin: 0 }}>PALUGADA</h3>
+            </div>
             <p>
               Platform katalog digital UMKM Kelurahan Banjarsari. Menghubungkan warga, 
               memajukan ekonomi lokal, satu transaksi pada satu waktu.

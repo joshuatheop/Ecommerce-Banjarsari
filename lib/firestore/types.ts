@@ -20,7 +20,50 @@ export type EventType =
   | 'SHARE_CLICK'
   | 'PAGE_VIEW';
 
+export type ChannelClickType =
+  | 'WHATSAPP_CLICK'
+  | 'MARKETPLACE_CLICK'
+  | 'SHARE_CLICK'
+  | 'view_item'
+  | 'click_wa'
+  | 'click_marketplace'
+  | 'salin_link';
+
 // ---- A. Produk ----
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  businessId: string;
+  imageUrls: string[];
+  status: 'aktif' | 'nonaktif';
+  clickCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // v2 aliases
+  product_id?: string;
+  business_id?: string;
+  category_id?: string;
+  product_name?: string;
+  product_description?: string | null;
+  product_price?: number;
+  whatsapp_number?: string | null;
+  marketplace?: string | null;
+  thumbnail_url?: string | null;
+  is_active?: boolean;
+
+  // PBI-11 specific / alias fields
+  Gallery_Images?: string[];
+  Product_Name?: string;
+  Full_Description?: string;
+  Product_Price?: number;
+  Related_Product_Category_ID?: string;
+  Marketplace_URL?: string;
+}
+
 export interface ProdukItem {
   product_id: string;           // UUID / Firestore doc ID
   business_id: string;          // FK → businesses
@@ -37,42 +80,58 @@ export interface ProdukItem {
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date | null;
+
+  // v1 aliases for backwards compatibility
+  id?: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  businessId?: string;
+  imageUrls?: string[];
+  status?: 'aktif' | 'nonaktif';
+  clickCount?: number;
 }
 
-// ---- B. Bisnis ----
-export interface Business {
-  business_id: string;          // UUID / Firestore doc ID
-  business_logo_url: string | null;
-  business_name: string;
-  business_description: string | null;
-  business_address: string | null;
-  business_phone: string | null;
-  slug: string;
-  marketplace: string | null;
-  area_name: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  owner_name: string | null;
-  is_active: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  deletedAt?: Date | null;
+// ---- B. Service ----
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  priceRange: string;       // e.g. "Rp 50.000 – Rp 150.000"
+  price: number;            // base price for sorting
+  category: string;
+  businessId: string;
+  imageUrls: string[];
+  status: 'aktif' | 'nonaktif';
+  clickCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // v2 aliases
+  service_id?: string;
+  business_id?: string;
+  category_id?: string;
+  service_name?: string;
+  service_description?: string | null;
+  minimum_price?: number | null;
+  maximum_price?: number | null;
+  price_type?: PriceType;
+  whatsapp_number?: string | null;
+  marketplace?: string | null;
+  thumbnail_url?: string | null;
+  is_active?: boolean;
+
+  // PBI-12 specific / alias fields
+  Gallery_Images?: string[];
+  Service_Name?: string;
+  Full_Description?: string;
+  Is_Negotiable?: boolean;
+  Availability_Type?: 'Tersedia' | 'Penuh' | string;
+  Service_Type?: 'Panggilan' | 'On-Site' | string;
+  Marketplace_URL?: string;
 }
 
-// ---- C. Kategori ----
-export interface Category {
-  category_id: string;          // UUID / Firestore doc ID
-  category_name: string;
-  category_type: CategoryType;
-  slug: string;
-  icon: string | null;          // kept for UI display (emoji)
-  is_active: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  deletedAt?: Date | null;
-}
-
-// ---- D. Jasa ----
 export interface ServiceItem {
   service_id: string;           // UUID / Firestore doc ID
   business_id: string;          // FK → businesses
@@ -88,6 +147,73 @@ export interface ServiceItem {
   availability_type: AvailabilityType;
   slug: string;
   thumbnail_url: string | null;
+  is_active: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date | null;
+
+  // v1 aliases
+  id?: string;
+  name?: string;
+  description?: string;
+  priceRange?: string;
+  price?: number;
+  category?: string;
+  businessId?: string;
+  imageUrls?: string[];
+  status?: 'aktif' | 'nonaktif';
+  clickCount?: number;
+}
+
+// ---- C. Business ----
+export interface Business {
+  id: string;
+  name: string;
+  owner: string;
+  description: string;
+  category: string;
+  address: string;
+  area: string;
+  whatsapp: string;
+  imageUrl: string;
+  status: 'aktif' | 'nonaktif';
+  createdAt: Date;
+  updatedAt: Date;
+
+  business_id: string;
+  business_logo_url: string | null;
+  business_name: string;
+  business_description: string | null;
+  business_address: string | null;
+  business_phone: string | null;
+  slug: string;
+  marketplace: string | null;
+  area_name: string | null;
+  owner_name: string | null;
+  is_active: boolean;
+
+  instagram?: string;
+  facebook?: string;
+  socialMediaUrl?: string;
+
+  latitude?: number | null;
+  longitude?: number | null;
+  Latitude_Coordinate?: number;
+  Longitude_Coordinate?: number;
+  deletedAt?: Date | null;
+}
+
+// ---- D. Category ----
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  type: 'product' | 'service' | 'both';
+
+  category_id: string;
+  category_name: string;
+  category_type: CategoryType;
   is_active: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -137,10 +263,27 @@ export interface SeoMeta {
   updatedAt?: Date;
 }
 
+// ---- H. Reviews / Ulasan ----
+export interface Review {
+  id: string;
+  targetId: string;
+  targetType: 'product' | 'service' | 'business';
+  userId: string;
+  userName: string;
+  userPhoto?: string;
+  rating: number;
+  comment: string;
+  createdAt: Date;
+}
+
 // ============================================================
 // Helper: format service price for display
 // ============================================================
-export function getServicePriceDisplay(service: ServiceItem): string {
+export function getServicePriceDisplay(service: ServiceItem | Service): string {
+  const minPrice = (service as any).minimum_price ?? service.price ?? null;
+  const maxPrice = (service as any).maximum_price ?? null;
+  const pType = (service as any).price_type || 'FIXED';
+
   const fmt = (n: number) =>
     new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -148,17 +291,17 @@ export function getServicePriceDisplay(service: ServiceItem): string {
       maximumFractionDigits: 0,
     }).format(n);
 
-  switch (service.price_type) {
+  switch (pType) {
     case 'FIXED':
-      return service.minimum_price != null ? fmt(service.minimum_price) : 'Hubungi Kami';
+      return minPrice != null ? fmt(minPrice) : 'Hubungi Kami';
     case 'STARTING_FROM':
-      return service.minimum_price != null
-        ? `Mulai ${fmt(service.minimum_price)}`
+      return minPrice != null
+        ? `Mulai ${fmt(minPrice)}`
         : 'Hubungi Kami';
     case 'RANGE':
-      if (service.minimum_price != null && service.maximum_price != null)
-        return `${fmt(service.minimum_price)} – ${fmt(service.maximum_price)}`;
-      return 'Hubungi Kami';
+      if (minPrice != null && maxPrice != null)
+        return `${fmt(minPrice)} – ${fmt(maxPrice)}`;
+      return minPrice != null ? fmt(minPrice) : 'Hubungi Kami';
     case 'CONTACT_PROVIDER':
     default:
       return 'Hubungi Kami';
