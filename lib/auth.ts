@@ -12,7 +12,8 @@ export async function getUserRole(uid: string): Promise<'admin' | 'pelanggan' | 
       return snap.data().role as 'admin' | 'pelanggan';
     }
     return null;
-  } catch {
+  } catch (error) {
+    console.error('[auth.ts] Gagal getUserRole dari Firestore:', error);
     return null;
   }
 }

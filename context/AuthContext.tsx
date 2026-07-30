@@ -38,7 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } else {
             setRole('pelanggan'); // default jika dokumen belum ada
           }
-        } catch {
+        } catch (error) {
+          console.error('[AuthContext] Gagal mengambil role dari Firestore:', error);
           setRole('pelanggan');
         }
       } else {
