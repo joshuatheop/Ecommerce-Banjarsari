@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import type { Service, ServiceItem } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
-import { Icons } from './Icons';
 
 interface ServiceCardProps {
   service: Service | ServiceItem | any;
@@ -71,6 +70,7 @@ const ServiceCard = ({ service, businessName, businessArea, categoryName }: Serv
           <Icons.Flame style={{ color: '#CDFF00', width: 11, height: 11 }} />
           {sClicks.toLocaleString('id-ID')} klik
         </div>
+        <div className="fl-card-price">{priceDisplay}</div>
       </div>
     </Link>
   );

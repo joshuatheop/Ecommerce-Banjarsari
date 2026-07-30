@@ -10,25 +10,25 @@ import type { ProdukItem, Category, Business } from '@/lib/firestore/types';
 import styles from '../../form.module.css';
 
 interface FormState {
-  product_name:        string;
-  business_id:         string;
-  category_id:         string;
-  product_price:       string;
+  product_name: string;
+  business_id: string;
+  category_id: string;
+  product_price: string;
   product_description: string;
-  whatsapp_number:     string;
-  marketplace:         string;
-  media_sosial:        string;
-  slug:                string;
+  whatsapp_number: string;
+  marketplace: string;
+  media_sosial: string;
+  slug: string;
 }
 
 export default function EditProdukPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router  = useRouter();
+  const router = useRouter();
 
-  const [produk, setProduk]           = useState<ProdukItem | null>(null);
-  const [categories, setCategories]   = useState<Category[]>([]);
-  const [businesses, setBusinesses]   = useState<Business[]>([]);
-  const [form, setForm]               = useState<FormState>({
+  const [produk, setProduk] = useState<ProdukItem | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [form, setForm] = useState<FormState>({
     product_name: '', business_id: '', category_id: '',
     product_price: '', product_description: '',
     whatsapp_number: '', marketplace: '', media_sosial: '', slug: '',
@@ -38,11 +38,11 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
   const [thumbPreview, setThumbPreview] = useState('');
 
   const [loadingData, setLoadingData] = useState(true);
-  const [uploading, setUploading]     = useState(false);
-  const [submitting, setSubmitting]   = useState(false);
-  const [notFound, setNotFound]       = useState(false);
-  const [errors, setErrors]           = useState<Partial<Record<keyof FormState | 'global', string>>>({});
-  const [isActive, setIsActive]       = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [isActive, setIsActive] = useState(true);
 
   const thumbInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,15 +51,15 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       if (!data) { setNotFound(true); setLoadingData(false); return; }
       setProduk(data);
       setForm({
-        product_name:        data.product_name,
-        business_id:         data.business_id,
-        category_id:         data.category_id,
-        product_price:       String(data.product_price),
+        product_name: data.product_name,
+        business_id: data.business_id,
+        category_id: data.category_id,
+        product_price: String(data.product_price),
         product_description: data.product_description ?? '',
-        whatsapp_number:     data.whatsapp_number ?? '',
-        marketplace:         data.marketplace ?? '',
-        media_sosial:        data.media_sosial ?? '',
-        slug:                data.slug,
+        whatsapp_number: data.whatsapp_number ?? '',
+        marketplace: data.marketplace ?? '',
+        media_sosial: data.media_sosial ?? '',
+        slug: data.slug,
       });
       setThumbPreview(data.thumbnail_url ?? '');
       setIsActive(data.is_active);
@@ -89,9 +89,9 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!form.product_name.trim()) e.product_name  = 'Wajib diisi.';
-    if (!form.business_id.trim())  e.business_id   = 'Wajib diisi.';
-    if (!form.category_id)         e.category_id   = 'Pilih kategori.';
+    if (!form.product_name.trim()) e.product_name = 'Wajib diisi.';
+    if (!form.business_id.trim()) e.business_id = 'Wajib diisi.';
+    if (!form.category_id) e.category_id = 'Pilih kategori.';
     if (!form.product_price || Number(form.product_price) <= 0) e.product_price = 'Harga harus > 0.';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -109,17 +109,17 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
         setUploading(false);
       }
       await updateProduk(id, {
-        business_id:         form.business_id.trim(),
-        category_id:         form.category_id,
-        product_name:        form.product_name.trim(),
+        business_id: form.business_id.trim(),
+        category_id: form.category_id,
+        product_name: form.product_name.trim(),
         product_description: form.product_description.trim() || null,
-        product_price:       Number(form.product_price),
-        slug:                form.slug || generateSlug(form.product_name),
-        whatsapp_number:     form.whatsapp_number.trim() || null,
-        marketplace:         form.marketplace.trim() || null,
-        media_sosial:        form.media_sosial.trim() || null,
-        thumbnail_url:       finalThumb,
-        is_active:           isActive,
+        product_price: Number(form.product_price),
+        slug: form.slug || generateSlug(form.product_name),
+        whatsapp_number: form.whatsapp_number.trim() || null,
+        marketplace: form.marketplace.trim() || null,
+        media_sosial: form.media_sosial.trim() || null,
+        thumbnail_url: finalThumb,
+        is_active: isActive,
       });
       router.push('/admin/produk');
     } catch {
@@ -165,9 +165,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       {/* Header */}
       <div className={styles.adminHeader}>
         <div>
-          <div className={styles.eyebrow}>PBI-24</div>
           <h1 className={styles.title}>Edit {produk?.product_name}</h1>
-          <div className={styles.pbiNote}>PBI-24</div>
         </div>
         <div className={styles.headerActions}>
           <button type="button" className={styles.btnSecondary}

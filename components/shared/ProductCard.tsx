@@ -75,6 +75,7 @@ const ProductCard = ({ product, businessName, businessArea, categoryName }: Prod
           <Icons.Flame style={{ color: '#CDFF00', width: 11, height: 11 }} />
           {pClicks.toLocaleString('id-ID')} klik
         </div>
+        <div className="fl-card-price">{formatPrice(product.product_price)}</div>
       </div>
     </Link>
   );

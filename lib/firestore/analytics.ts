@@ -150,7 +150,7 @@ export async function fetchAnalyticsStats(): Promise<DashboardStats> {
    Track a redirect / click event (PBI-13, PBI-14, PBI-15)
    ============================================================ */
 export async function trackClickEvent(
-  type: ChannelClickType,
+  type: string,
   metadata: {
     itemName?: string;
     businessName?: string;

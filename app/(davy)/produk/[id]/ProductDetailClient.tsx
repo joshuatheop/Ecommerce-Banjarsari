@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Product, Business } from '@/lib/firestore/types';
+import { useEffect } from 'react';
+import type { ProdukItem, Business } from '@/lib/firestore/types';
 import { incrementProductClicks } from '@/lib/firestore/data-loader';
 import { trackClickEvent } from '@/lib/firestore/analytics';
 import { Icons } from '@/components/shared/Icons';
@@ -10,7 +10,7 @@ import ReviewSection from '@/components/shared/ReviewSection';
 import Link from 'next/link';
 
 interface ProductDetailClientProps {
-  product: Product;
+  product: ProdukItem;
   business: Business | null;
 }
 
@@ -26,11 +26,11 @@ export default function ProductDetailClient({ product, business }: ProductDetail
 
   // Auto-increment page views as analytics event
   useEffect(() => {
-    if (product.id) {
-      incrementProductClicks(product.id);
+    if (product.product_id) {
+      incrementProductClicks(product.product_id);
       trackClickEvent('view_item', {
-        itemName: product.name,
-        businessName: business?.name || 'UMKM Banjarsari',
+        itemName: product.product_name,
+        businessName: business?.business_name || 'UMKM Banjarsari',
       });
     }
   }, [product.id, product.name, business?.name]);
@@ -43,31 +43,33 @@ export default function ProductDetailClient({ product, business }: ProductDetail
     }).format(price);
 
   const handleWhatsAppRedirect = async () => {
-    if (!business?.whatsapp) return;
+    const waNumber = product.whatsapp_number || business?.business_phone;
+    if (!waNumber) return;
 
     await trackClickEvent('click_wa', {
-      itemName: product.name,
-      businessName: business.name,
-      waNumber: business.whatsapp,
+      itemName: product.product_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      waNumber,
     });
-    await incrementProductClicks(product.id);
+    await incrementProductClicks(product.product_id);
 
     const cleanNum = business.whatsapp.replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Halo Ibu/Bapak dari *${business.name}*, saya tertarik dengan produk *${product.name}* (harga: ${formatPrice(product.price)}) yang terdaftar di Katalog Banjarsari. Apakah produk ini tersedia?`
+      `Halo Ibu/Bapak dari *${business?.business_name || 'UMKM Banjarsari'}*, saya tertarik dengan produk *${product.product_name}* (harga: ${formatPrice(product.product_price)}) yang terdaftar di Katalog Banjarsari. Apakah produk ini tersedia?`
     );
     window.open(`https://wa.me/${cleanNum}?text=${text}`, '_blank');
   };
 
   const handleMarketplaceRedirect = async () => {
-    if (!product.Marketplace_URL) return;
+    const url = product.marketplace || business?.marketplace;
+    if (!url) return;
 
     await trackClickEvent('click_marketplace', {
-      itemName: product.name,
-      businessName: business?.name || 'UMKM Banjarsari',
-      marketplaceUrl: product.Marketplace_URL,
+      itemName: product.product_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      marketplaceUrl: url,
     });
-    await incrementProductClicks(product.id);
+    await incrementProductClicks(product.product_id);
 
     window.open(product.Marketplace_URL, '_blank');
   };
@@ -307,7 +309,6 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                   Populer #{product.clickCount + 1}
                 </div>
               </div>
-            </div>
 
             {/* Quick Spec Pills */}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -513,6 +514,16 @@ export default function ProductDetailClient({ product, business }: ProductDetail
             </div>
 
           </div>
+
+          {/* BOTTOM FULL-WIDTH MAP INSIDE THE SAME CONTAINER */}
+          <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: 0 }} />
+
+          <BusinessLocationMap
+            latitude={business?.latitude ?? null}
+            longitude={business?.longitude ?? null}
+            businessName={business?.business_name}
+            address={business?.business_address || business?.area_name}
+          />
 
         </div>
 

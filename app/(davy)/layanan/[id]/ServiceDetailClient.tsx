@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Service, Business } from '@/lib/firestore/types';
+import { useEffect } from 'react';
+import type { ServiceItem, Business } from '@/lib/firestore/types';
+import { getServicePriceDisplay } from '@/lib/firestore/types';
 import { incrementServiceClicks } from '@/lib/firestore/data-loader';
 import { trackClickEvent } from '@/lib/firestore/analytics';
 import { Icons } from '@/components/shared/Icons';
@@ -10,7 +11,7 @@ import ReviewSection from '@/components/shared/ReviewSection';
 import Link from 'next/link';
 
 interface ServiceDetailClientProps {
-  service: Service;
+  service: ServiceItem;
   business: Business | null;
 }
 
@@ -26,41 +27,43 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
 
   // Auto-increment page views as analytics event
   useEffect(() => {
-    if (service.id) {
-      incrementServiceClicks(service.id);
+    if (service.service_id) {
+      incrementServiceClicks(service.service_id);
       trackClickEvent('view_item', {
-        itemName: service.name,
-        businessName: business?.name || 'UMKM Banjarsari',
+        itemName: service.service_name,
+        businessName: business?.business_name || 'UMKM Banjarsari',
       });
     }
-  }, [service.id, service.name, business?.name]);
+  }, [service.service_id, service.service_name, business?.business_name]);
 
   const handleWhatsAppRedirect = async () => {
-    if (!business?.whatsapp) return;
+    const waNumber = service.whatsapp_number || business?.business_phone;
+    if (!waNumber) return;
 
     await trackClickEvent('click_wa', {
-      itemName: service.name,
-      businessName: business.name,
-      waNumber: business.whatsapp,
+      itemName: service.service_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      waNumber,
     });
-    await incrementServiceClicks(service.id);
+    await incrementServiceClicks(service.service_id);
 
     const cleanNum = business.whatsapp.replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Halo Ibu/Bapak dari *${business.name}*, saya tertarik dengan layanan jasa *${service.name}* (${service.priceRange || 'Harga Nego'}) yang terdaftar di Katalog Banjarsari. Apakah tersedia untuk dipesan?`
+      `Halo Ibu/Bapak dari *${business?.business_name || 'UMKM Banjarsari'}*, saya tertarik dengan layanan jasa *${service.service_name}* (${priceDisplay}) yang terdaftar di Katalog Banjarsari. Apakah tersedia untuk dipesan?`
     );
     window.open(`https://wa.me/${cleanNum}?text=${text}`, '_blank');
   };
 
   const handleMarketplaceRedirect = async () => {
-    if (!service.Marketplace_URL) return;
+    const url = service.marketplace || business?.marketplace;
+    if (!url) return;
 
     await trackClickEvent('click_marketplace', {
-      itemName: service.name,
-      businessName: business?.name || 'UMKM Banjarsari',
-      marketplaceUrl: service.Marketplace_URL,
+      itemName: service.service_name,
+      businessName: business?.business_name || 'UMKM Banjarsari',
+      marketplaceUrl: url,
     });
-    await incrementServiceClicks(service.id);
+    await incrementServiceClicks(service.service_id);
 
     window.open(service.Marketplace_URL, '_blank');
   };
@@ -300,7 +303,6 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                   Populer #{service.clickCount + 1}
                 </div>
               </div>
-            </div>
 
             {/* Quick Spec Pills */}
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -507,6 +509,16 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
 
           </div>
 
+          {/* BOTTOM FULL-WIDTH MAP INSIDE THE SAME CONTAINER */}
+          <hr style={{ border: 0, borderTop: '1px solid var(--line)', margin: 0 }} />
+
+          <BusinessLocationMap
+            latitude={business?.latitude ?? null}
+            longitude={business?.longitude ?? null}
+            businessName={business?.business_name}
+            address={business?.business_address || business?.area_name}
+          />
+
         </div>
 
         {/* Rating & Review Section */}
@@ -533,7 +545,7 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
         @media (max-width: 768px) {
           .detail-grid {
             grid-template-columns: 1fr !important;
-            padding: 20px !important;
+            padding: 0 !important;
           }
         }
       `}</style>

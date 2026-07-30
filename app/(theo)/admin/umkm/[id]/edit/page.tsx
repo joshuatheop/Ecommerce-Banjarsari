@@ -172,7 +172,6 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
       {/* Header */}
       <div className={styles.adminHeader}>
         <div>
-          <div className={styles.eyebrow}>PBI-20 · CRUD</div>
           <h1 className={styles.title}>Edit {business?.business_name}</h1>
           <div className={styles.pbiNote}>Ubah informasi profil pelaku usaha / UMKM Banjarsari.</div>
         </div>
