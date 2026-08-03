@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProducts, getServices, getBusinesses, getCategories } from "@/lib/firestore/data-loader";
 import ProductCard from "@/components/shared/ProductCard";
 import ServiceCard from "@/components/shared/ServiceCard";
+import MostFavoriteSection from "@/components/shared/MostFavoriteSection";
 import RankRow from "@/components/shared/RankRow";
 import { Icons } from "@/components/shared/Icons";
 
@@ -16,8 +17,8 @@ export default async function Home() {
   ]);
 
   // Guard: ensure arrays even if Firebase returns undefined unexpectedly
-  const products   = rawProducts   ?? [];
-  const services   = rawServices   ?? [];
+  const products = rawProducts ?? [];
+  const services = rawServices ?? [];
   const businesses = rawBusinesses ?? [];
   const categories = rawCategories ?? [];
 
@@ -84,50 +85,114 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Decorative Card Collage */}
-            <div style={{ position: "relative" }}>
+            {/* Hero Right Column: Unified Centered Showcase */}
+            <div style={{ position: "relative", width: "100%" }}>
               <div style={{
-                aspectRatio: "4/5", borderRadius: "var(--radius-xl)", overflow: "hidden",
-                background: "var(--primary)", position: "relative",
-                boxShadow: "var(--shadow-lg)",
-                display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 32
+                borderRadius: "var(--radius-xl)", overflow: "hidden",
+                background: "linear-gradient(145deg, #013020 0%, #05472B 60%, #032b1b 100%)",
+                position: "relative",
+                boxShadow: "0 24px 50px rgba(1, 48, 32, 0.18)",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
+                padding: "32px 24px", textAlign: "center", minHeight: 460,
+                border: "1px solid rgba(255, 255, 255, 0.1)"
               }}>
+                {/* Background ambient lighting */}
                 <div style={{
-                  position: "absolute", inset: 0,
-                  background: `repeating-linear-gradient(135deg, transparent 0 28px, rgba(255,255,255,0.03) 28px 56px)`,
+                  position: "absolute", top: "-15%", right: "-10%", width: 260, height: 260,
+                  background: "radial-gradient(circle, rgba(0,192,163,0.25) 0%, rgba(0,0,0,0) 70%)",
+                  filter: "blur(30px)", pointerEvents: "none"
                 }}></div>
                 <div style={{
-                  position: "absolute", top: 24, left: 24, right: 24,
-                  fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--secondary)",
-                  letterSpacing: "0.12em", textTransform: "uppercase", display: "flex", justifyContent: "space-between",
+                  position: "absolute", bottom: "-15%", left: "-10%", width: 260, height: 260,
+                  background: "radial-gradient(circle, rgba(205,255,0,0.15) 0%, rgba(0,0,0,0) 70%)",
+                  filter: "blur(30px)", pointerEvents: "none"
+                }}></div>
+                <div style={{
+                  position: "absolute", inset: 0,
+                  backgroundImage: `radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)`,
+                  backgroundSize: '24px 24px', opacity: 0.5, pointerEvents: "none"
+                }}></div>
+
+                {/* Top Badge: Centered */}
+                <div style={{
+                  position: "relative", zIndex: 2, width: "100%",
+                  display: "flex", justifyContent: "center", alignItems: "center", gap: 8
                 }}>
-                  <span>★ KARYA WARGA</span>
-                  <span>Banjarsari &apos;26</span>
+                  <div style={{
+                    background: "rgba(255, 255, 255, 0.1)", backdropFilter: "blur(8px)",
+                    borderRadius: 999, padding: "6px 16px", border: "1px solid rgba(255, 255, 255, 0.15)",
+                    display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, fontWeight: 700,
+                    color: "var(--secondary)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em"
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#00C0A3", display: "inline-block", boxShadow: "0 0 10px #00C0A3" }}></span>
+                    KATALOG WARGA BANJARSARI &apos;26
+                  </div>
                 </div>
 
-                <h3 className="display" style={{ color: "var(--white)", fontSize: 22, fontStyle: "italic", fontWeight: 500, lineHeight: 1.2, margin: 0 }}>
-                  Menghubungkan UMKM dan mempermudah transaksi tetangga
-                </h3>
-              </div>
+                {/* CENTER FEATURED CARD (Batik Sari Asih) - Centered */}
+                <div style={{
+                  position: "relative", zIndex: 2, width: "100%", maxWidth: 330,
+                  margin: "24px 0",
+                  background: "rgba(255, 255, 255, 0.96)", backdropFilter: "blur(16px)",
+                  borderRadius: 20, padding: "20px 22px", textAlign: "center",
+                  boxShadow: "0 16px 36px rgba(0, 0, 0, 0.22)",
+                  border: "1.5px solid rgba(255, 255, 255, 0.3)"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <span style={{
+                      background: "rgba(5, 71, 43, 0.08)", color: "var(--primary)",
+                      fontSize: 10, fontWeight: 800, padding: "4px 10px", borderRadius: 6,
+                      fontFamily: "var(--font-mono)", textTransform: "uppercase"
+                    }}>
+                      🔥 TERPOPULER HARI INI
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#e11d48", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      ❤️ {products[0]?.like_count ?? 42}
+                    </span>
+                  </div>
 
-              {/* Floating trending item card */}
-              <div style={{
-                position: "absolute", right: -16, bottom: 100, width: 260,
-                background: "var(--surface)", borderRadius: 14, padding: 18,
-                boxShadow: "var(--shadow-lg)", border: "1px solid var(--line)",
-              }}>
-                <div className="label-eyebrow" style={{ marginBottom: 6, color: "var(--primary)" }}>Terpopuler Hari Ini</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 8, color: "var(--dark)" }}>
-                  {businesses[0]?.business_name ?? 'Batik Sari Asih'}
+                  <h4 style={{
+                    fontFamily: "var(--font-ui)", fontSize: 18, fontWeight: 800,
+                    margin: "0 0 4px", color: "var(--primary)", textAlign: "center", lineHeight: 1.2
+                  }}>
+                    {businesses[0]?.business_name ?? 'Batik Sari Asih'}
+                  </h4>
+
+                  <p style={{
+                    fontSize: 13, color: "var(--text-secondary)", margin: "0 0 14px",
+                    textAlign: "center", fontWeight: 500
+                  }}>
+                    {products[0]?.product_name ?? 'Kain Batik Tulis Motif Parang'}
+                  </p>
+
+                  <Link
+                    href={products[0] ? `/produk/${products[0].product_id}` : '/katalog'}
+                    style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      background: "var(--primary)", color: "var(--white)",
+                      fontSize: 13, fontWeight: 700, padding: "10px 20px", borderRadius: 10,
+                      width: "100%", textDecoration: "none", boxShadow: "0 4px 12px rgba(5, 71, 43, 0.2)"
+                    }}
+                  >
+                    Lihat Detail Produk <Icons.ArrowRight style={{ width: 14, height: 14 }} />
+                  </Link>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "var(--primary)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 600 }}>
-                    {topProducts[0]?.product_name ?? 'Kain Motif Tulis'}
-                  </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>
-                    <Icons.Flame style={{ color: "var(--accent-y)" }} /> Unggulan
-                  </span>
+
+                {/* BOTTOM SLOGAN - Centered */}
+                <div style={{
+                  position: "relative", zIndex: 2, width: "100%",
+                  background: "rgba(0, 0, 0, 0.2)", backdropFilter: "blur(10px)",
+                  borderRadius: 14, padding: "14px 18px", border: "1px solid rgba(255, 255, 255, 0.12)",
+                  textAlign: "center"
+                }}>
+                  <h3 style={{
+                    color: "var(--white)", fontSize: 15, fontWeight: 600,
+                    lineHeight: 1.4, margin: 0, fontStyle: "italic"
+                  }}>
+                    &ldquo;Menghubungkan UMKM dan mempermudah transaksi tetangga&rdquo;
+                  </h3>
                 </div>
+
               </div>
             </div>
           </div>
@@ -171,113 +236,12 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* PBI-05 & PBI-06: SECTION MOST FAVORITE (Yang lagi naik) */}
-      <section className="section fl-fav-section">
-        <div className="container">
-          <div className="section-head">
-            <div>
-              <h2>Paling Sering Dilihat Warga</h2>
-              <p>Produk dan layanan jasa yang paling populer diakses warga Banjarsari.</p>
-            </div>
-          </div>
-          
-          <div className="fl-fav-grid">
-            {/* Column 1: Product Rankings (PBI-05) */}
-            <div className="fl-fav-col">
-              <div className="fl-fav-col-header product">
-                ★ Terpopuler · Produk
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {Array.from({ length: 4 }).map((_, index) => {
-                  const product = topProducts[index];
-                  if (product) {
-                    return (
-                      <RankRow
-                        key={product.product_id}
-                        rank={index + 1}
-                        item={product}
-                        type="product"
-                        businessName={getBusinessName(product.business_id)}
-                      />
-                    );
-                  }
-                  return (
-                    <a
-                      key={`promo-p-${index}`}
-                      href="https://wa.me/628123456789?text=Halo%20Karang%20Taruna%20Banjarsari,%20saya%20ingin%20mendaftarkan%20produk%20UMKM%20saya%20ke%20katalog..."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="fl-rank-row promo-card"
-                    >
-                      <div className="fl-rank-num promo-plus">+</div>
-                      <div className="fl-rank-thumb">
-                        <div className="fl-rank-placeholder">
-                          <span>📦</span>
-                        </div>
-                      </div>
-                      <div className="fl-rank-info">
-                        <h4 className="fl-rank-title">Punya Produk UMKM?</h4>
-                        <p className="fl-rank-business">Daftarkan gratis lewat Karang Taruna</p>
-                      </div>
-                      <div className="fl-rank-stats">
-                        <div className="fl-rank-clicks promo-label">Daftar</div>
-                        <div className="fl-rank-label">WA</div>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Column 2: Service Rankings (PBI-06) */}
-            <div className="fl-fav-col">
-              <div className="fl-fav-col-header service">
-                ★ Terpopuler · Jasa
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {Array.from({ length: 4 }).map((_, index) => {
-                  const service = topServices[index];
-                  if (service) {
-                    return (
-                      <RankRow
-                        key={service.service_id}
-                        rank={index + 1}
-                        item={service}
-                        type="service"
-                        businessName={getBusinessName(service.business_id)}
-                      />
-                    );
-                  }
-                  return (
-                    <a
-                      key={`promo-s-${index}`}
-                      href="https://wa.me/628123456789?text=Halo%20Karang%20Taruna%20Banjarsari,%20saya%20ingin%20mendaftarkan%20layanan%20jasa%20saya%20ke%20katalog..."
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="fl-rank-row promo-card"
-                    >
-                      <div className="fl-rank-num promo-plus">+</div>
-                      <div className="fl-rank-thumb">
-                        <div className="fl-rank-placeholder">
-                          <span>🔧</span>
-                        </div>
-                      </div>
-                      <div className="fl-rank-info">
-                        <h4 className="fl-rank-title">Punya Layanan Jasa?</h4>
-                        <p className="fl-rank-business">Promosikan keahlian Anda di sini</p>
-                      </div>
-                      <div className="fl-rank-stats">
-                        <div className="fl-rank-clicks promo-label">Daftar</div>
-                        <div className="fl-rank-label">WA</div>
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* PBI-05 & PBI-06: SECTION MOST FAVORITE (Yang lagi naik & disukai) */}
+      <MostFavoriteSection
+        products={products}
+        services={services}
+        businesses={businesses}
+      />
 
       {/* PBI-01: SECTION PRODUK UMKM */}
       <section className="section" style={{ background: "var(--bg)" }}>

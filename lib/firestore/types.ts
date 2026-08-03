@@ -34,6 +34,8 @@ export interface ProdukItem {
   media_sosial: string | null;
   thumbnail_url: string | null;
   is_active: boolean;
+  like_count?: number;
+  clickCount?: number;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date | null;
@@ -89,6 +91,8 @@ export interface ServiceItem {
   slug: string;
   thumbnail_url: string | null;
   is_active: boolean;
+  like_count?: number;
+  clickCount?: number;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date | null;
@@ -135,6 +139,19 @@ export interface SeoMeta {
   ogTitle: string;
   ogDescription: string;
   updatedAt?: Date;
+}
+
+// ---- I. Review Item (Ulasan & Rating) ----
+export interface ReviewItem {
+  review_id: string;
+  item_id: string;
+  item_type: 'product' | 'service';
+  user_id: string;
+  user_name: string;
+  user_photo: string | null;
+  rating: number;
+  comment: string;
+  createdAt?: Date;
 }
 
 // ============================================================
