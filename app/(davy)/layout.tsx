@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
+import { FavoritesProvider } from "@/context/FavoritesContext";
 
 export default function DavyLayout({
   children,
@@ -8,12 +9,14 @@ export default function DavyLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="davy-theme" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div className="app-root">
-        <Navbar />
-        {children}
-        <Footer />
+    <FavoritesProvider>
+      <div className="davy-theme" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="app-root">
+          <Navbar />
+          {children}
+          <Footer />
+        </div>
       </div>
-    </div>
+    </FavoritesProvider>
   );
 }

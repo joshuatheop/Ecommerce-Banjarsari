@@ -15,8 +15,9 @@ function NavLinks() {
   const typeParam = searchParams ? searchParams.get('type') : null;
 
   const isHomeActive = pathname === '/';
-  const isLayananActive = pathname.startsWith('/layanan') || (pathname.startsWith('/katalog') && typeParam === 'service');
-  const isKatalogActive = (pathname.startsWith('/katalog') || pathname.startsWith('/produk')) && !isLayananActive;
+  const isBisnisActive = pathname.startsWith('/bisnis') || pathname.startsWith('/toko');
+  const isLayananActive = !isBisnisActive && (pathname.startsWith('/layanan') || (pathname.startsWith('/katalog') && typeParam === 'service'));
+  const isKatalogActive = !isBisnisActive && (pathname.startsWith('/katalog') || pathname.startsWith('/produk')) && !isLayananActive;
 
   useEffect(() => {
     if (!pathname) return;
@@ -39,6 +40,9 @@ function NavLinks() {
       </Link>
       <Link href="/katalog?type=service" className={isLayananActive ? 'active' : ''}>
         Layanan Jasa
+      </Link>
+      <Link href="/bisnis" className={isBisnisActive ? 'active' : ''}>
+        Profil UMKM
       </Link>
     </nav>
   );
@@ -94,6 +98,7 @@ export default function Navbar() {
               <Link href="/" className={pathname === '/' ? 'active' : ''}>Beranda</Link>
               <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>Katalog</Link>
               <Link href="/katalog?type=service">Layanan Jasa</Link>
+              <Link href="/bisnis" className={pathname.startsWith('/bisnis') ? 'active' : ''}>Profil UMKM</Link>
             </nav>
           }>
             <NavLinks />

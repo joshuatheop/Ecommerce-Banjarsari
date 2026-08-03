@@ -81,6 +81,7 @@ const CatalogContainer = ({
   };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const [activeArea, setActiveArea] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
@@ -90,11 +91,16 @@ const CatalogContainer = ({
     () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
     [businesses]
   );
+  const businessAreaMap = useMemo(
+    () => new Map(businesses.map((b) => [b.business_id, b.area_name])),
+    [businesses]
+  );
   const getBusinessName = (id: string) => businessMap.get(id) || 'UMKM Banjarsari';
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
     if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
+    if (activeArea) list = list.filter((p) => businessAreaMap.get(p.business_id) === activeArea);
     if (searchQuery) list = list.filter((p) =>
       p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.product_description || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -111,12 +117,13 @@ const CatalogContainer = ({
     if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
     else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
     return list;
-  }, [products, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
+  }, [products, activeCategory, activeArea, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
     if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
+    if (activeArea) list = list.filter((s) => businessAreaMap.get(s.business_id) === activeArea);
     if (searchQuery) list = list.filter((s) =>
       s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.service_description || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -133,7 +140,7 @@ const CatalogContainer = ({
     if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
     else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
     return list;
-  }, [services, activeCategory, searchQuery, minPrice, maxPrice, sortBy]);
+  }, [services, activeCategory, activeArea, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
 
   // Categories visible for current type
   const visibleCategories = useMemo(
@@ -148,7 +155,7 @@ const CatalogContainer = ({
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
   const hasPriceFilter = minPrice !== '' || maxPrice !== '';
-  const activeFiltersCount = [activeCategory, searchQuery, hasPriceFilter ? 'price' : ''].filter(Boolean).length;
+  const activeFiltersCount = [activeCategory, activeArea, searchQuery, hasPriceFilter ? 'price' : ''].filter(Boolean).length;
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.category_id, c.category_name])),
@@ -157,6 +164,7 @@ const CatalogContainer = ({
 
   const resetFilters = () => {
     setActiveCategory('');
+    setActiveArea('');
     setSearchQuery('');
     setMinPrice('');
     setMaxPrice('');
@@ -272,6 +280,29 @@ const CatalogContainer = ({
               ))}
             </FilterGroup>
 
+            <FilterGroup title="Area" count={activeArea ? 1 : 0}>
+              <label className="fl-check-row">
+                <input
+                  type="checkbox"
+                  className="fl-checkbox"
+                  checked={activeArea === ''}
+                  onChange={() => setActiveArea('')}
+                />
+                <span className="fl-check-label">Semua Area</span>
+              </label>
+              {areas.map((a) => (
+                <label key={a} className="fl-check-row">
+                  <input
+                    type="checkbox"
+                    className="fl-checkbox"
+                    checked={activeArea === a}
+                    onChange={() => setActiveArea(activeArea === a ? '' : a)}
+                  />
+                  <span className="fl-check-label">{a}</span>
+                </label>
+              ))}
+            </FilterGroup>
+
             <FilterGroup title="Rentang Harga" count={hasPriceFilter ? 1 : 0}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -348,11 +379,16 @@ const CatalogContainer = ({
               </div>
             </div>
 
-            {(activeCategory || hasPriceFilter || searchQuery) && (
+            {(activeCategory || activeArea || hasPriceFilter || searchQuery) && (
               <div className="fl-active-filters">
                 {activeCategory && (
                   <button className="fl-pill" onClick={() => setActiveCategory('')}>
                     {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
+                  </button>
+                )}
+                {activeArea && (
+                  <button className="fl-pill" onClick={() => setActiveArea('')}>
+                    {activeArea} <span>x</span>
                   </button>
                 )}
                 {hasPriceFilter && (
@@ -418,15 +454,23 @@ const CatalogContainer = ({
         .fl-hero-text-outline {
           font-family: var(--font-display);
           font-size: clamp(40px, 8vw, 96px);
-          font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-          color: transparent; -webkit-text-stroke: 2px rgba(170, 220, 171, 0.6);
+          font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+          background: linear-gradient(180deg, #FFFFFF 0%, #E8FF70 50%, #CDFF00 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          -webkit-text-stroke: 1.5px rgba(205, 255, 0, 0.7);
+          filter: drop-shadow(0 4px 12px rgba(205, 255, 0, 0.35));
           line-height: 1; text-align: center;
         }
         .fl-hero-text-solid {
           font-family: var(--font-display);
-          font-size: clamp(24px, 4vw, 56px);
-          font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-          color: #AADCAB; line-height: 1.1; text-align: center;
+          font-size: clamp(28px, 4.5vw, 60px);
+          font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase;
+          background: linear-gradient(180deg, #FAFFD1 0%, #CDFF00 45%, #9BC400 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          filter: drop-shadow(0 2px 10px rgba(205, 255, 0, 0.5));
+          line-height: 1.1; text-align: center;
         }
 
         /* Breadcrumb */
