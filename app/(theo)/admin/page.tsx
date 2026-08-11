@@ -640,7 +640,7 @@ export default function AdminDashboardPage() {
               <p className={styles.emptyText}>Belum ada data.</p>
             ) : (
               stats?.topProducts.map((it, i) => (
-                <div key={it.name} className={`${styles.itemRow} ${i > 0 ? styles.itemRowBorder : ''}`}>
+                <div key={i} className={`${styles.itemRow} ${i > 0 ? styles.itemRowBorder : ''}`}>
                   <span className={styles.rank}>#{i + 1}</span>
                   <div
                     className={styles.itemThumb}

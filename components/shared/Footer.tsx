@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Icons } from './Icons';
 
 export default function Footer() {
@@ -10,43 +11,24 @@ export default function Footer() {
         <div className="footer-inner">
           {/* Brand Column */}
           <div className="footer-brand">
+            {/* Partner Logos */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Image
+                  src="/logo-banjarsari.png"
+                  alt="Kelurahan Banjarsari"
+                  width={40}
+                  height={48}
+                  style={{ objectFit: 'contain', display: 'block' }}
+                />
+              </div>
+            </div>
+
             <h3>PALUGADA</h3>
             <p>
-              Platform katalog digital UMKM Kelurahan Banjarsari. Menghubungkan warga, 
+              Platform katalog digital UMKM Kelurahan Banjarsari. Menghubungkan warga,
               memajukan ekonomi lokal, satu transaksi pada satu waktu.
             </p>
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.08)',
-                  display: 'grid', placeItems: 'center',
-                  color: 'rgba(255,255,255,0.7)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Icons.Instagram />
-              </a>
-              <a
-                href="https://wa.me/"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.08)',
-                  display: 'grid', placeItems: 'center',
-                  color: 'rgba(255,255,255,0.7)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Icons.Whatsapp />
-              </a>
-            </div>
           </div>
 
           {/* Links Column */}
@@ -105,9 +87,15 @@ export default function Footer() {
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
             © {year} PALUGADA · Kelurahan Banjarsari
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
-            <Icons.MapPin />
-            Banjarsari, Jawa Tengah
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+            Dikembangkan oleh tim Telkom University
+            <Image
+              src="/logo-telkom.png"
+              alt="Telkom University"
+              width={90}
+              height={30}
+              style={{ objectFit: 'contain', display: 'block', opacity: 0.7 }}
+            />
           </div>
         </div>
       </div>

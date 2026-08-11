@@ -2,6 +2,8 @@ import {
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
+  doc,
   query,
   where,
   orderBy,
@@ -56,6 +58,24 @@ export async function getReviews(itemId: string, itemType: 'product' | 'service'
   }
 }
 
+export async function getAllReviews(): Promise<ReviewItem[]> {
+  try {
+    const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => toReviewItem(d.id, d.data() as Record<string, unknown>));
+  } catch (err) {
+    console.warn('[getAllReviews] orderBy failed, fallback:', err);
+    const snap = await getDocs(collection(db, COLLECTION));
+    const list = snap.docs.map((d) => toReviewItem(d.id, d.data() as Record<string, unknown>));
+    list.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    return list;
+  }
+}
+
+export async function deleteReview(reviewId: string): Promise<void> {
+  await deleteDoc(doc(db, COLLECTION, reviewId));
+}
+
 export async function addReview(
   payload: Omit<ReviewItem, 'review_id' | 'createdAt'>
 ): Promise<string> {
@@ -82,3 +102,4 @@ export function calculateAverageRating(reviews: ReviewItem[]): { average: number
   const average = Math.round((total / reviews.length) * 10) / 10;
   return { average, count: reviews.length };
 }
+

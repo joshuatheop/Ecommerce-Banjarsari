@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ProdukItem, Business } from '@/lib/firestore/types';
 import { incrementProductClicks } from '@/lib/firestore/data-loader';
 import { trackClickEvent } from '@/lib/firestore/analytics';
@@ -19,9 +19,11 @@ export default function ProductDetailClient({ product, business }: ProductDetail
   const { isProductFavorited, toggleProductFav, getLikes } = useFavorites();
   const isFav = isProductFavorited(product.product_id);
   const currentLikes = getLikes(product.product_id, product.like_count ?? 0);
-  // Auto-increment page views as analytics event
+  const tracked = useRef(false);
+  // Auto-increment page views as analytics event — hanya 1x per mount
   useEffect(() => {
-    if (product.product_id) {
+    if (product.product_id && !tracked.current) {
+      tracked.current = true;
       incrementProductClicks(product.product_id);
       trackClickEvent('view_item', {
         itemName: product.product_name,
@@ -30,7 +32,8 @@ export default function ProductDetailClient({ product, business }: ProductDetail
         businessId: product.business_id,
       });
     }
-  }, [product.product_id, product.product_name, product.business_id, business?.business_name]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.product_id]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat('id-ID', {

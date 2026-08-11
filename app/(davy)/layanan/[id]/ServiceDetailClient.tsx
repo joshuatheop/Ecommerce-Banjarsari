@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { ServiceItem, Business } from '@/lib/firestore/types';
 import { getServicePriceDisplay } from '@/lib/firestore/types';
 import { incrementServiceClicks } from '@/lib/firestore/data-loader';
@@ -20,9 +20,11 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
   const { isServiceFavorited, toggleServiceFav, getLikes } = useFavorites();
   const isFav = isServiceFavorited(service.service_id);
   const currentLikes = getLikes(service.service_id, service.like_count ?? 0);
-  // Auto-increment page views as analytics event
+  const tracked = useRef(false);
+  // Auto-increment page views as analytics event — hanya 1x per mount
   useEffect(() => {
-    if (service.service_id) {
+    if (service.service_id && !tracked.current) {
+      tracked.current = true;
       incrementServiceClicks(service.service_id);
       trackClickEvent('view_item', {
         itemName: service.service_name,
@@ -31,7 +33,8 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
         businessId: service.business_id,
       });
     }
-  }, [service.service_id, service.service_name, service.business_id, business?.business_name]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service.service_id]);
 
   const priceDisplay = getServicePriceDisplay(service);
 
