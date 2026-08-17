@@ -87,12 +87,12 @@ export default function Footer() {
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontFamily: 'var(--font-mono)' }}>
             © {year} PALUGADA · Kelurahan Banjarsari
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'rgba(255,255,255,0.4)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
             Dikembangkan oleh tim Telkom University
             <Image
-              src="/logo-telkom.png"
+              src="/logotelkom.png"
               alt="Telkom University"
-              width={90}
+              width={30}
               height={30}
               style={{ objectFit: 'contain', display: 'block', opacity: 0.7 }}
             />
