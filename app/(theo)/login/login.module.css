@@ -692,3 +692,40 @@
     display: none;
   }
 }
+
+/* ============================
+   EXTRA SMALL MOBILE (320px-480px)
+   ============================ */
+@media (max-width: 480px) {
+  .formCol {
+    padding: 24px 16px;
+  }
+
+  .formCard {
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  .greeting {
+    font-size: 22px;
+  }
+
+  .inputWithIcon {
+    height: 48px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .submitBtn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .googleBtn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .statsCardContainer {
+    grid-template-columns: 1fr;
+  }
+}

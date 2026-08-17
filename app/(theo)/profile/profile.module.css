@@ -547,3 +547,36 @@
     width: 100%;
   }
 }
+
+/* ============================
+   EXTRA SMALL MOBILE (320px-480px)
+   ============================ */
+@media (max-width: 480px) {
+  .container {
+    padding: 24px 12px;
+  }
+
+  .card {
+    padding: 24px 14px;
+    border-radius: 16px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .input,
+  .disabledInput {
+    height: 48px;
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+
+  .saveBtn {
+    height: 48px;
+    font-size: 14px;
+  }
+
+  .logoutBtn {
+    max-width: 100%;
+  }
+}

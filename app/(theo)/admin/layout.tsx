@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
@@ -15,11 +15,14 @@ import {
   LogOut,
   Search,
   MessageSquare,
+  Menu,
+  X,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, role, loading, logout } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Guard: redirect jika bukan admin
   useEffect(() => {
@@ -28,6 +31,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       else if (role !== 'admin') router.replace('/');
     }
   }, [user, role, loading, router]);
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, []);
 
   if (loading || !user || role !== 'admin') {
     return (
@@ -54,8 +62,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className={styles.shell}>
+      {/* ===== HAMBURGER BUTTON (mobile only) ===== */}
+      <button
+        id="admin-hamburger-btn"
+        className={styles.hamburger}
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle navigation menu"
+      >
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* ===== MOBILE OVERLAY ===== */}
+      {sidebarOpen && (
+        <div
+          className={`${styles.mobileOverlay} ${sidebarOpen ? styles.open : ''}`}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ===== SIDEBAR ===== */}
-      <aside className={styles.sidebar}>
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.open : ''}`}>
         <div className={styles.sidebarTop}>
           {/* Brand */}
           <div className={styles.brand}>
@@ -79,6 +106,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href={item.href}
                 className={styles.navItem}
                 id={`admin-nav-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+                onClick={() => setSidebarOpen(false)}
               >
                 <span className={styles.navIcon}>{item.icon}</span>
                 {item.label}
@@ -93,6 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             href="/"
             className={styles.navItem}
             id="admin-nav-laman-user"
+            onClick={() => setSidebarOpen(false)}
           >
             <span className={styles.navIcon}><Home size={18} /></span>
             Laman User
