@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getProdukById, updateProduk } from '@/lib/firestore/produk';
 import { generateSlug } from '@/lib/firestore/types';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
-import { uploadThumbnail } from '@/lib/storage';
+import { compressToWebPBase64, estimateBase64SizeKB, downloadBase64AsWebP } from '@/lib/imageUtils';
 import type { ProdukItem, Category, Business } from '@/lib/firestore/types';
 import styles from '../../form.module.css';
 
@@ -34,14 +34,20 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     whatsapp_number: '', marketplace: '', media_sosial: '', slug: '',
   });
 
-  const [newThumbFile, setNewThumbFile] = useState<File | null>(null);
+  // thumbBase64: null = hapus foto, string = foto aktif (Base64 atau URL lama)
+  const [thumbBase64, setThumbBase64] = useState<string | null>(null);
+  // thumbPreview: apa yang ditampilkan di UI (Data URL atau URL lama)
   const [thumbPreview, setThumbPreview] = useState('');
+  // Apakah admin memilih foto baru di sesi ini
+  const [hasNewThumb, setHasNewThumb] = useState(false);
+  // Info ukuran setelah kompresi
+  const [thumbSizeKB, setThumbSizeKB] = useState<number | null>(null);
 
   const [loadingData, setLoadingData] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false); // kompresi Canvas
   const [submitting, setSubmitting] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global' | 'thumb', string>>>({});
   const [isActive, setIsActive] = useState(true);
 
   const thumbInputRef = useRef<HTMLInputElement>(null);
@@ -51,16 +57,18 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
       if (!data) { setNotFound(true); setLoadingData(false); return; }
       setProduk(data);
       setForm({
-        product_name: data.product_name,
-        business_id: data.business_id,
-        category_id: data.category_id,
-        product_price: String(data.product_price),
+        product_name:        data.product_name,
+        business_id:         data.business_id,
+        category_id:         data.category_id,
+        product_price:       String(data.product_price),
         product_description: data.product_description ?? '',
-        whatsapp_number: data.whatsapp_number ?? '',
-        marketplace: data.marketplace ?? '',
-        media_sosial: data.media_sosial ?? '',
-        slug: data.slug,
+        whatsapp_number:     data.whatsapp_number ?? '',
+        marketplace:         data.marketplace ?? '',
+        media_sosial:        data.media_sosial ?? '',
+        slug:                data.slug,
       });
+      // Load foto yang sudah ada (bisa Base64 atau URL eksternal lama)
+      setThumbBase64(data.thumbnail_url ?? null);
       setThumbPreview(data.thumbnail_url ?? '');
       setIsActive(data.is_active);
       setCategories(cats.filter((c) => c.category_type === 'PRODUCT'));
@@ -80,11 +88,40 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     setErrors((p) => ({ ...p, [name]: '' }));
   };
 
-  const handleNewThumb = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ============================================================
+  // Handler: admin memilih file gambar baru
+  // Pipeline: File → Canvas resize (≤800px) → WebP 60% → Base64
+  // ============================================================
+  const handleNewThumb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setNewThumbFile(file);
-    setThumbPreview(URL.createObjectURL(file));
+
+    setHasNewThumb(true);
+    setThumbBase64(null);
+    setThumbPreview('');
+    setThumbSizeKB(null);
+    setErrors((p) => ({ ...p, thumb: '' }));
+    setProcessing(true);
+
+    try {
+      // Kompresi via Canvas: resize ke ≤800px, konversi ke WebP 60%
+      const base64 = await compressToWebPBase64(file, 800, 0.6);
+
+      // Data URL langsung dipakai sebagai src <img>
+      setThumbBase64(base64);
+      setThumbPreview(base64);
+      setThumbSizeKB(estimateBase64SizeKB(base64));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memproses gambar.';
+      setErrors((p) => ({ ...p, thumb: msg }));
+      // Rollback ke foto sebelumnya jika gagal
+      setThumbBase64(produk?.thumbnail_url ?? null);
+      setThumbPreview(produk?.thumbnail_url ?? '');
+      setHasNewThumb(false);
+    } finally {
+      setProcessing(false);
+      if (thumbInputRef.current) thumbInputRef.current.value = '';
+    }
   };
 
   const validate = () => {
@@ -102,36 +139,34 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
     if (!validate()) return;
     setSubmitting(true);
     try {
-      let finalThumb = produk?.thumbnail_url ?? null;
-      if (newThumbFile) {
-        setUploading(true);
-        finalThumb = await uploadThumbnail(newThumbFile, id);
-        setUploading(false);
-      }
+      // Kirim thumbBase64 (Base64 baru, Base64 lama, atau null jika foto dihapus)
+      // Tidak ada upload ke Firebase Storage — string langsung disimpan ke Firestore
       await updateProduk(id, {
-        business_id: form.business_id.trim(),
-        category_id: form.category_id,
-        product_name: form.product_name.trim(),
+        business_id:         form.business_id.trim(),
+        category_id:         form.category_id,
+        product_name:        form.product_name.trim(),
         product_description: form.product_description.trim() || null,
-        product_price: Number(form.product_price),
-        slug: form.slug || generateSlug(form.product_name),
-        whatsapp_number: form.whatsapp_number.trim() || null,
-        marketplace: form.marketplace.trim() || null,
-        media_sosial: form.media_sosial.trim() || null,
-        thumbnail_url: finalThumb,
-        is_active: isActive,
+        product_price:       Number(form.product_price),
+        slug:                form.slug || generateSlug(form.product_name),
+        whatsapp_number:     form.whatsapp_number.trim() || null,
+        marketplace:         form.marketplace.trim() || null,
+        media_sosial:        form.media_sosial.trim() || null,
+        thumbnail_url:       thumbBase64,   // ← Base64 string atau null
+        is_active:           isActive,
       });
       router.push('/admin/produk');
     } catch {
       setErrors({ global: 'Gagal memperbarui. Cek koneksi atau konfigurasi Firebase.' });
     } finally {
       setSubmitting(false);
-      setUploading(false);
     }
   };
 
-  const busy = submitting || uploading;
+  const busy = submitting || processing;
 
+  // ============================================================
+  // Loading & Not Found states
+  // ============================================================
   if (loadingData) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '40vh', color: 'var(--text-muted)', fontSize: 14 }}>
@@ -173,7 +208,7 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             Batal
           </button>
           <button id="btn-simpan-perubahan" type="submit" className={styles.btnPrimary} disabled={busy}>
-            {uploading ? 'Mengunggah...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
+            {processing ? 'Memproses gambar...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
           </button>
         </div>
       </div>
@@ -317,13 +352,38 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
             <div className={styles.galleryTitle}>Foto Produk</div>
 
             {/* Thumbnail zone */}
-            <div className={styles.thumbZone} onClick={() => thumbInputRef.current?.click()}>
-              <input ref={thumbInputRef} type="file" accept="image/*"
-                onChange={handleNewThumb} disabled={busy} style={{ display: 'none' }}
-                onClick={(e) => e.stopPropagation()} />
-              {thumbPreview ? (
-                <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
+            <div
+              className={styles.thumbZone}
+              onClick={() => !busy && thumbInputRef.current?.click()}
+              style={{ cursor: busy ? 'not-allowed' : 'pointer' }}
+            >
+              {/* Input file tersembunyi */}
+              <input
+                ref={thumbInputRef}
+                id="input-foto-produk-edit"
+                type="file"
+                accept="image/*"
+                onChange={handleNewThumb}
+                disabled={busy}
+                style={{ display: 'none' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              {processing ? (
+                /* State: sedang proses Canvas */
+                <div className={styles.thumbZoneContent}>
+                  <div className={styles.uploadSpinner} />
+                  <span className={styles.thumbZoneText}>Memproses gambar...</span>
+                  <span className={styles.thumbZoneSub}>Resize & konversi ke WebP</span>
+                </div>
+              ) : thumbPreview ? (
+                /*
+                 * Render foto: bisa Base64 (data:image/webp;base64,...) atau URL lama
+                 * Browser menangani keduanya secara otomatis via tag <img>
+                 */
+                <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail produk" />
               ) : (
+                /* State: belum ada foto */
                 <div className={styles.thumbZoneContent}>
                   <span className={styles.thumbZoneIcon}>🔄</span>
                   <span className={styles.thumbZoneText}>Klik untuk ganti thumbnail</span>
@@ -332,25 +392,69 @@ export default function EditProdukPage({ params }: { params: Promise<{ id: strin
               )}
             </div>
 
-            {thumbPreview && (
-              <button
-                type="button"
-                className={styles.btnGhost}
-                style={{ marginTop: 8, width: '100%' }}
-                onClick={() => { setNewThumbFile(null); setThumbPreview(''); }}
-                disabled={busy}
-              >
-                Hapus Foto
-              </button>
+            {/* Error gambar */}
+            {errors.thumb && (
+              <div className={styles.errorBanner} style={{ marginTop: 8, fontSize: 12 }}>
+                ⚠️ {errors.thumb}
+              </div>
             )}
 
-            {uploading && (
-              <div className={styles.uploadProgress}>
-                <div className={styles.uploadSpinner} />
-                Mengunggah ke Firebase Storage...
+            {/* Info ukuran file setelah kompresi (hanya tampil jika ada foto baru) */}
+            {hasNewThumb && thumbSizeKB !== null && !errors.thumb && (
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                color: 'var(--text-muted, #888)',
+                textAlign: 'center',
+                padding: '4px 8px',
+                background: 'var(--surface-subtle, #f5f5f5)',
+                borderRadius: 6,
+              }}>
+                ✅ Foto terkompresi: <strong>~{thumbSizeKB} KB</strong> (WebP 800px, 60%)
+              </div>
+            )}
+
+            {/* Tombol aksi foto */}
+            {thumbPreview && !processing && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                {/* Hapus foto */}
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setThumbBase64(null);
+                    setThumbPreview('');
+                    setThumbSizeKB(null);
+                    setHasNewThumb(false);
+                  }}
+                  disabled={busy}
+                >
+                  Hapus Foto
+                </button>
+
+                {/*
+                 * Download foto produk sebagai file .webp
+                 * Fungsi downloadBase64AsWebP bekerja untuk:
+                 * - Data URL Base64 ("data:image/webp;base64,...")
+                 * - Tidak bekerja untuk URL eksternal (karena CORS)
+                 */}
+                {thumbBase64?.startsWith('data:') && (
+                  <button
+                    id={`btn-download-foto-${id}`}
+                    type="button"
+                    className={styles.btnGhost}
+                    style={{ flex: 1 }}
+                    onClick={() => downloadBase64AsWebP(thumbBase64, form.slug || id)}
+                    disabled={busy}
+                  >
+                    ⬇ Download
+                  </button>
+                )}
               </div>
             )}
           </div>
+
         </aside>
       </div>
     </form>
