@@ -223,10 +223,21 @@
 }
 .barRow {
   display: grid;
-  grid-template-columns: 160px 1fr 48px;
+  grid-template-columns: 140px 1fr 44px;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 8px 0;
+}
+
+@media (max-width: 480px) {
+  .barRow {
+    grid-template-columns: 100px 1fr 36px;
+    gap: 8px;
+    padding: 6px 0;
+  }
+  .barName {
+    font-size: 12px;
+  }
 }
 .barName {
   font-size: 13px;
@@ -431,4 +442,149 @@
   background: rgba(5,71,43,0.08);
   color: var(--color-primary);
   white-space: nowrap;
+}
+
+/* ============================
+   RESPONSIVE — DASHBOARD
+   ============================ */
+@media (max-width: 768px) {
+  .wrapper {
+    gap: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .headerActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .select {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .btnSecondary,
+  .btnSeed {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .cardHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .legend {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tableHead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+  }
+
+  .statGrid {
+    gap: 10px;
+  }
+
+  .statCard {
+    padding: 16px;
+  }
+
+  .scValue {
+    font-size: 26px;
+  }
+
+  .itemRow {
+    grid-template-columns: 24px 36px 1fr auto;
+    gap: 8px;
+  }
+
+  .itemThumb,
+  .bizAvatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-width: 480px) {
+  .wrapper {
+    gap: 14px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .statCard {
+    padding: 14px 12px;
+  }
+
+  .scValue {
+    font-size: 22px;
+  }
+
+  .card {
+    padding: 14px 12px;
+  }
+
+  .cardTitle {
+    font-size: 15px;
+  }
+
+  .tableHead {
+    padding: 12px;
+  }
+
+  .tableTitle {
+    font-size: 13px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .itemRow {
+    grid-template-columns: 20px 32px 1fr auto;
+    gap: 6px;
+    padding: 8px 0;
+  }
+
+  .itemName {
+    font-size: 13px;
+  }
+
+  .itemSub {
+    font-size: 11px;
+  }
+
+  .btnGhost {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
 }

@@ -107,9 +107,10 @@ export default async function BisnisPage() {
           </div>
         ) : (
           <div
+            className="biz-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: 20,
             }}
           >
@@ -132,7 +133,7 @@ export default async function BisnisPage() {
                     background: '#fff',
                     border: '1.5px solid #111',
                     borderRadius: 0,
-                    padding: 24,
+                    padding: 'clamp(16px, 3vw, 24px)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',

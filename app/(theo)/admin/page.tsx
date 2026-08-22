@@ -538,25 +538,29 @@ export default function AdminDashboardPage() {
           label="Total Sesi Pengunjung"
           value={stats?.totalSessions.toLocaleString('id-ID') ?? '—'}
           loading={loading}
-          delta="+18,3%" dir="up"
+          delta={stats?.deltas.sessions.delta ?? '0%'}
+          dir={stats?.deltas.sessions.dir ?? 'up'}
         />
         <StatCard
           label="Total Event Tercatat"
           value={stats?.totalEvents.toLocaleString('id-ID') ?? '—'}
           loading={loading}
-          delta="+34,1%" dir="up"
+          delta={stats?.deltas.events.delta ?? '0%'}
+          dir={stats?.deltas.events.dir ?? 'up'}
         />
         <StatCard
           label="Klik WhatsApp"
           value={stats?.eventTypeCounts.WHATSAPP_CLICK.toLocaleString('id-ID') ?? '—'}
           loading={loading}
-          delta="+12,4%" dir="up"
+          delta={stats?.deltas.waClicks.delta ?? '0%'}
+          dir={stats?.deltas.waClicks.dir ?? 'up'}
         />
         <StatCard
           label="Klik Marketplace"
           value={stats?.eventTypeCounts.MARKETPLACE_CLICK.toLocaleString('id-ID') ?? '—'}
           loading={loading}
-          delta="−4,2%" dir="down"
+          delta={stats?.deltas.mpClicks.delta ?? '0%'}
+          dir={stats?.deltas.mpClicks.dir ?? 'down'}
         />
       </div>
 

@@ -474,3 +474,100 @@
   from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ============================
+   RESPONSIVE — ULASAN
+   ============================ */
+@media (max-width: 768px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pageTitle {
+    font-size: 20px;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .statCard {
+    padding: 14px 12px;
+  }
+
+  .statValue {
+    font-size: 22px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchBox {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .count {
+    margin-left: 0;
+  }
+
+  .tableWrap {
+    overflow-x: auto;
+  }
+
+  .table {
+    min-width: 700px;
+  }
+
+  .modal {
+    padding: 24px 16px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .btnCancel,
+  .btnConfirmDelete {
+    width: 100%;
+    text-align: center;
+  }
+
+  .toast {
+    right: 12px;
+    bottom: 16px;
+    left: 12px;
+    text-align: center;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statsRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .statCard {
+    padding: 12px 10px;
+  }
+
+  .statValue {
+    font-size: 20px;
+  }
+
+  .emptyState {
+    padding: 40px 16px;
+  }
+}

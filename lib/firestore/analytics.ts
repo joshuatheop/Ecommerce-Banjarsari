@@ -27,6 +27,12 @@ export interface DashboardStats {
   recentEvents:     AnalyticsEvent[];
   dailyStats:       { date: string; sessions: number; clicks: number }[];
   monthlyStats:     { date: string; sessions: number; clicks: number }[];
+  deltas: {
+    sessions: { delta: string; dir: 'up' | 'down' };
+    events:   { delta: string; dir: 'up' | 'down' };
+    waClicks: { delta: string; dir: 'up' | 'down' };
+    mpClicks: { delta: string; dir: 'up' | 'down' };
+  };
 }
 
 const ANALYTICS_COL = 'analytics_events';
@@ -244,7 +250,62 @@ function toLocalDateStr(date: Date): string {
     clicks: monthlyDataMap[monthKey].clicks,
   }));
 
-  return { totalSessions, totalEvents, topProducts, topBusinesses, eventTypeCounts, recentEvents, dailyStats, monthlyStats };
+  // Calculate Deltas: Bulan Ini (Current Month) vs Bulan Lalu (Previous Month)
+  const now = new Date();
+  const startCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const startPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).getTime();
+
+  const currSessions = new Set<string>();
+  const prevSessions = new Set<string>();
+  let currEvents = 0;
+  let prevEvents = 0;
+  let currWa = 0;
+  let prevWa = 0;
+  let currMp = 0;
+  let prevMp = 0;
+
+  for (const e of events) {
+    if (!e.createdAt) continue;
+    const t = e.createdAt.getTime();
+    if (t >= startCurrentMonth) {
+      if (e.session_id && e.session_id !== 'server-session') {
+        currSessions.add(e.session_id);
+      }
+      currEvents++;
+      if (e.event_type === 'WHATSAPP_CLICK') currWa++;
+      if (e.event_type === 'MARKETPLACE_CLICK') currMp++;
+    } else if (t >= startPrevMonth && t < startCurrentMonth) {
+      if (e.session_id && e.session_id !== 'server-session') {
+        prevSessions.add(e.session_id);
+      }
+      prevEvents++;
+      if (e.event_type === 'WHATSAPP_CLICK') prevWa++;
+      if (e.event_type === 'MARKETPLACE_CLICK') prevMp++;
+    }
+  }
+
+  function formatDelta(curr: number, prev: number): { delta: string; dir: 'up' | 'down' } {
+    if (prev === 0) {
+      if (curr === 0) return { delta: '0%', dir: 'up' };
+      return { delta: '+100%', dir: 'up' };
+    }
+    const pct = ((curr - prev) / prev) * 100;
+    const formatted = Math.abs(pct).toFixed(1).replace('.', ',');
+    if (pct >= 0) {
+      return { delta: `+${formatted}%`, dir: 'up' };
+    } else {
+      return { delta: `−${formatted}%`, dir: 'down' };
+    }
+  }
+
+  const deltas = {
+    sessions: formatDelta(currSessions.size, prevSessions.size),
+    events: formatDelta(currEvents, prevEvents),
+    waClicks: formatDelta(currWa, prevWa),
+    mpClicks: formatDelta(currMp, prevMp),
+  };
+
+  return { totalSessions, totalEvents, topProducts, topBusinesses, eventTypeCounts, recentEvents, dailyStats, monthlyStats, deltas };
 }
 
 /* ============================================================

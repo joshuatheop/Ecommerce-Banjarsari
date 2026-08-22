@@ -71,21 +71,21 @@ export default function BusinessDetailClient({
             background: '#fff',
             border: '2px solid #111',
             borderRadius: 0,
-            padding: '24px 28px',
+            padding: 'clamp(16px, 3vw, 24px)',
             boxShadow: '0 8px 30px rgba(0,0,0,0.1)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 20,
+            gap: 16,
           }}
         >
-          <div style={{ display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap', flex: 1, minWidth: 280 }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', flex: 1, minWidth: 240 }}>
             {/* Logo Avatar */}
             <div
               style={{
-                width: 80,
-                height: 80,
+                width: 'clamp(60px, 10vw, 80px)',
+                height: 'clamp(60px, 10vw, 80px)',
                 borderRadius: 12,
                 background: '#05472B',
                 color: '#AADCAB',
@@ -93,7 +93,7 @@ export default function BusinessDetailClient({
                 placeItems: 'center',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 800,
-                fontSize: 30,
+                fontSize: 'clamp(22px, 4vw, 30px)',
                 border: '3px solid #111',
                 flexShrink: 0,
                 overflow: 'hidden',
@@ -112,7 +112,7 @@ export default function BusinessDetailClient({
               )}
             </div>
 
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
                 <span
                   style={{
@@ -131,7 +131,7 @@ export default function BusinessDetailClient({
               <h1
                 style={{
                   fontFamily: 'var(--font-display)',
-                  fontSize: 'clamp(20px, 3vw, 30px)',
+                  fontSize: 'clamp(18px, 3.5vw, 30px)',
                   fontWeight: 800,
                   color: '#111',
                   margin: 0,
@@ -142,7 +142,7 @@ export default function BusinessDetailClient({
                 {business.business_name}
               </h1>
               {business.owner_name && (
-                <div style={{ fontSize: 13.5, color: '#555', marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
                   Pemilik Usaha: <strong>{business.owner_name}</strong>
                 </div>
               )}
@@ -150,16 +150,16 @@ export default function BusinessDetailClient({
           </div>
 
           {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', width: '100%', maxWidth: '360px' }}>
             {waNumber && (
               <a
                 href={`https://wa.me/${waNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-wa"
-                style={{ borderRadius: 0, fontWeight: 700, textTransform: 'uppercase', fontSize: 12.5, height: 40, padding: '0 16px' }}
+                style={{ flex: 1, minWidth: 140, borderRadius: 0, fontWeight: 700, textTransform: 'uppercase', fontSize: 12, height: 40, padding: '0 12px' }}
               >
-                <Icons.Whatsapp style={{ width: 16, height: 16 }} /> Hubungi WhatsApp
+                <Icons.Whatsapp style={{ width: 16, height: 16 }} /> Hubungi WA
               </a>
             )}
             {business.latitude && business.longitude && (
@@ -168,7 +168,7 @@ export default function BusinessDetailClient({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-secondary"
-                style={{ borderRadius: 0, fontWeight: 700, textTransform: 'uppercase', fontSize: 12.5, height: 40, padding: '0 16px', borderColor: '#111' }}
+                style={{ flex: 1, minWidth: 130, borderRadius: 0, fontWeight: 700, textTransform: 'uppercase', fontSize: 12, height: 40, padding: '0 12px', borderColor: '#111' }}
               >
                 Petunjuk Arah
               </a>
@@ -194,14 +194,14 @@ export default function BusinessDetailClient({
                 style={{
                   background: '#fff',
                   border: '1px solid #E0E0E0',
-                  padding: 24,
+                  padding: 'clamp(16px, 3vw, 24px)',
                   marginBottom: 24,
                 }}
               >
                 <h3 style={{ fontSize: 14, fontWeight: 800, textTransform: 'uppercase', color: '#111', margin: '0 0 8px', letterSpacing: '0.06em' }}>
                   Tentang Usaha
                 </h3>
-                <p style={{ fontSize: 14.5, color: '#333', lineHeight: 1.6, margin: 0 }}>
+                <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, margin: 0 }}>
                   {business.business_description}
                 </p>
               </div>
@@ -212,8 +212,9 @@ export default function BusinessDetailClient({
               <button
                 onClick={() => setActiveTab('products')}
                 style={{
-                  padding: '10px 24px',
-                  fontSize: 14,
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: 'clamp(11px, 2.5vw, 14px)',
                   fontWeight: 800,
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
@@ -226,13 +227,14 @@ export default function BusinessDetailClient({
                   marginRight: 4,
                 }}
               >
-                Produk UMKM ({products.length})
+                Produk ({products.length})
               </button>
               <button
                 onClick={() => setActiveTab('services')}
                 style={{
-                  padding: '10px 24px',
-                  fontSize: 14,
+                  flex: 1,
+                  padding: '8px 12px',
+                  fontSize: 'clamp(11px, 2.5vw, 14px)',
                   fontWeight: 800,
                   textTransform: 'uppercase',
                   letterSpacing: '0.04em',
@@ -244,7 +246,7 @@ export default function BusinessDetailClient({
                   cursor: 'pointer',
                 }}
               >
-                Layanan Jasa ({services.length})
+                Jasa ({services.length})
               </button>
             </div>
 
@@ -255,7 +257,7 @@ export default function BusinessDetailClient({
                   <p style={{ color: '#666', margin: 0 }}>Tidak ada produk yang terdaftar untuk UMKM ini.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+                <div className="grid-products" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
                   {products.map((p) => (
                     <ProductCard
                       key={p.product_id}
@@ -271,7 +273,7 @@ export default function BusinessDetailClient({
                 <p style={{ color: '#666', margin: 0 }}>Tidak ada layanan jasa yang terdaftar untuk UMKM ini.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              <div className="grid-products" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
                 {services.map((s) => (
                   <ServiceCard
                     key={s.service_id}
