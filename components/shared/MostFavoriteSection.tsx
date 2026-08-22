@@ -66,14 +66,11 @@ export default function MostFavoriteSection({
       <div className="container">
         <div className="section-head">
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#e11d48', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-              ❤️ Paling Banyak Disukai Warga
-            </div>
             <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 32px)', fontWeight: 800, margin: 0, color: 'var(--primary)' }}>
               Most Favorite Produk &amp; Jasa
             </h2>
             <p style={{ margin: '6px 0 0', color: 'var(--dark)', opacity: 0.75, fontSize: 15 }}>
-              Produk dan layanan jasa yang paling banyak disukai (dipencet tombol ❤️ Love) oleh warga Banjarsari.
+              Produk dan layanan jasa yang paling banyak disukai oleh warga Banjarsari.
             </p>
           </div>
         </div>

@@ -26,22 +26,20 @@ export default function Footer() {
 
             <h3>PALUGADA</h3>
             <p>
-              Platform katalog digital UMKM Kelurahan Banjarsari. Menghubungkan warga,
-              memajukan ekonomi lokal, satu transaksi pada satu waktu.
+              Platform katalog digital UMKM Kelurahan Banjarsari. Menghubungkan warga dan memajukan ekonomi lokal
             </p>
           </div>
 
           {/* Links Column */}
           <div>
-            <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--secondary)', marginBottom: 16 }}>
+            <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--secondary)', marginBottom: 16 }}>
               Jelajahi
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
-                { label: 'Semua Produk', href: '/katalog?type=product' },
+                { label: 'Produk UMKM', href: '/katalog?type=product' },
                 { label: 'Layanan Jasa', href: '/katalog?type=service' },
-                { label: 'Makanan & Minuman', href: '/katalog?type=product&category=makanan' },
-                { label: 'Kerajinan Tangan', href: '/katalog?type=product&category=kerajinan' },
+                { label: 'Profil UMKM', href: '/bisnis' },
               ].map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, transition: 'color 0.15s' }}>
@@ -54,15 +52,13 @@ export default function Footer() {
 
           {/* Info Column */}
           <div>
-            <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--secondary)', marginBottom: 16 }}>
+            <h4 style={{ fontFamily: 'var(--font-mono)', fontSize: 13, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--secondary)', marginBottom: 16 }}>
               Informasi
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
-                { label: 'Tentang Kami', href: '#' },
-                { label: 'Daftarkan UMKM', href: '#' },
-                { label: 'Kebijakan Privasi', href: '#' },
-                { label: 'Hubungi Kami', href: '#' },
+                { label: 'Website Desa', href: '#' },
+                { label: 'Hubungi Kami', href: '' },
               ].map((item) => (
                 <li key={item.label}>
                   <Link href={item.href} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, transition: 'color 0.15s' }}>

@@ -11,7 +11,7 @@ export default function DavyLayout({
 }) {
   return (
     <FavoritesProvider>
-      <div className="davy-theme" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className="davy-theme" style={{ minHeight: '100vh' }}>
         <div className="app-root">
           <Navbar />
           {children}
