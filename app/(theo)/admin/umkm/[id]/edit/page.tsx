@@ -4,7 +4,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getBisnisById, updateBisnis } from '@/lib/firestore/bisnis';
 import { generateSlug } from '@/lib/firestore/types';
-import { uploadThumbnail } from '@/lib/storage';
+import { compressToWebPBase64, estimateBase64SizeKB, downloadBase64AsWebP } from '@/lib/imageUtils';
 import MapSelector from '@/components/shared/MapSelector';
 import type { Business } from '@/lib/firestore/types';
 import styles from '../../form.module.css';
@@ -40,14 +40,16 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
     longitude: '',
   });
 
-  const [newLogoFile, setNewLogoFile] = useState<File | null>(null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState('');
+  const [logoSizeKB, setLogoSizeKB] = useState<number | null>(null);
+  const [hasNewLogo, setHasNewLogo] = useState(false);
 
   const [loadingData, setLoadingData] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global' | 'logo', string>>>({});
   const [isActive, setIsActive] = useState(true);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -72,7 +74,9 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
         latitude: data.latitude != null ? String(data.latitude) : '',
         longitude: data.longitude != null ? String(data.longitude) : '',
       });
+      setLogoBase64(data.business_logo_url ?? null);
       setLogoPreview(data.business_logo_url ?? '');
+      if (data.business_logo_url) setLogoSizeKB(estimateBase64SizeKB(data.business_logo_url));
       setIsActive(data.is_active);
       setLoadingData(false);
     });
@@ -89,11 +93,32 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
     setErrors((p) => ({ ...p, [name]: '' }));
   };
 
-  const handleNewLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setNewLogoFile(file);
-    setLogoPreview(URL.createObjectURL(file));
+
+    setHasNewLogo(true);
+    setLogoBase64(null);
+    setLogoPreview('');
+    setLogoSizeKB(null);
+    setErrors((p) => ({ ...p, logo: '' }));
+    setProcessing(true);
+
+    try {
+      const base64 = await compressToWebPBase64(file, 800, 0.6);
+      setLogoBase64(base64);
+      setLogoPreview(base64);
+      setLogoSizeKB(estimateBase64SizeKB(base64));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memproses logo.';
+      setErrors((p) => ({ ...p, logo: msg }));
+      setLogoBase64(business?.business_logo_url ?? null);
+      setLogoPreview(business?.business_logo_url ?? '');
+      setHasNewLogo(false);
+    } finally {
+      setProcessing(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
   };
 
   const validate = () => {
@@ -108,13 +133,6 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
     if (!validate()) return;
     setSubmitting(true);
     try {
-      let finalLogo = business?.business_logo_url ?? null;
-      if (newLogoFile) {
-        setUploading(true);
-        finalLogo = await uploadThumbnail(newLogoFile, id);
-        setUploading(false);
-      }
-
       await updateBisnis(id, {
         business_name: form.business_name.trim(),
         owner_name: form.owner_name.trim() || null,
@@ -126,7 +144,7 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
         slug: form.slug || generateSlug(form.business_name),
         latitude: form.latitude ? Number(form.latitude) : null,
         longitude: form.longitude ? Number(form.longitude) : null,
-        business_logo_url: finalLogo,
+        business_logo_url: logoBase64,
         is_active: isActive,
       });
       router.push('/admin/umkm');
@@ -134,11 +152,10 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
       setErrors({ global: 'Gagal memperbarui. Cek koneksi atau konfigurasi Firebase.' });
     } finally {
       setSubmitting(false);
-      setUploading(false);
     }
   };
 
-  const busy = submitting || uploading;
+  const busy = submitting || processing;
 
   if (loadingData) {
     return (
@@ -190,7 +207,7 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
             className={styles.btnPrimary}
             disabled={busy}
           >
-            {uploading ? 'Mengunggah...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
+            {processing ? 'Memproses...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
           </button>
         </div>
       </div>
@@ -419,7 +436,13 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
                 style={{ display: 'none' }}
                 onClick={(e) => e.stopPropagation()}
               />
-              {logoPreview ? (
+              {processing ? (
+                <div className={styles.thumbZoneContent}>
+                  <div className={styles.uploadSpinner} />
+                  <span className={styles.thumbZoneText}>Memproses logo...</span>
+                  <span className={styles.thumbZoneSub}>Resize & konversi ke WebP</span>
+                </div>
+              ) : logoPreview ? (
                 <img className={styles.thumbPreviewImg} src={logoPreview} alt="Logo" />
               ) : (
                 <div className={styles.thumbZoneContent}>
@@ -430,25 +453,57 @@ export default function EditUmkmPage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            {logoPreview && (
-              <button
-                type="button"
-                className={styles.btnGhost}
-                style={{ marginTop: 8, width: '100%' }}
-                onClick={() => {
-                  setNewLogoFile(null);
-                  setLogoPreview('');
-                }}
-                disabled={busy}
-              >
-                Hapus Logo
-              </button>
+            {/* Error gambar */}
+            {errors.logo && (
+              <div className={styles.errorBanner} style={{ marginTop: 8, fontSize: 12 }}>
+                ⚠️ {errors.logo}
+              </div>
             )}
 
-            {uploading && (
-              <div className={styles.uploadProgress}>
-                <div className={styles.uploadSpinner} />
-                Mengunggah ke Firebase Storage...
+            {/* Info ukuran file setelah kompresi */}
+            {hasNewLogo && logoSizeKB !== null && !errors.logo && (
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                color: 'var(--text-muted, #888)',
+                textAlign: 'center',
+                padding: '4px 8px',
+                background: 'var(--surface-subtle, #f5f5f5)',
+                borderRadius: 6,
+              }}>
+                ✅ Logo terkompresi: <strong>~{logoSizeKB} KB</strong> (WebP 800px, 60%)
+              </div>
+            )}
+
+            {logoPreview && !processing && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setLogoBase64(null);
+                    setLogoPreview('');
+                    setLogoSizeKB(null);
+                    setHasNewLogo(false);
+                  }}
+                  disabled={busy}
+                >
+                  Hapus Logo
+                </button>
+
+                {logoBase64?.startsWith('data:') && (
+                  <button
+                    id={`btn-download-logo-${id}`}
+                    type="button"
+                    className={styles.btnGhost}
+                    style={{ flex: 1 }}
+                    onClick={() => downloadBase64AsWebP(logoBase64, form.slug || id)}
+                    disabled={busy}
+                  >
+                    ⬇ Download
+                  </button>
+                )}
               </div>
             )}
           </div>

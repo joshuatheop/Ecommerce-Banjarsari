@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createJasa } from '@/lib/firestore/jasa';
 import { generateSlug } from '@/lib/firestore/types';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
-import { uploadThumbnail } from '@/lib/storage';
+import { compressToWebPBase64, estimateBase64SizeKB } from '@/lib/imageUtils';
 import type { Category, Business, PriceType, AvailabilityType } from '@/lib/firestore/types';
 import styles from '../form.module.css';
 
@@ -42,11 +42,15 @@ export default function TambahJasaPage() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [categories, setCategories] = useState<Category[]>([]);
   const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [thumbFile, setThumbFile] = useState<File | null>(null);
+
+  // thumbBase64 menyimpan Data URL hasil kompresi Canvas → siap simpan ke Firestore
+  const [thumbBase64, setThumbBase64] = useState<string | null>(null);
   const [thumbPreview, setThumbPreview] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [thumbSizeKB, setThumbSizeKB] = useState<number | null>(null);
+
+  const [processing, setProcessing] = useState(false); // sedang kompresi Canvas
   const [submitting, setSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global' | 'thumb', string>>>({});
   const [isNegotiable, setIsNegotiable] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
@@ -70,11 +74,29 @@ export default function TambahJasaPage() {
     setErrors((p) => ({ ...p, [name]: '' }));
   };
 
-  const handleThumb = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Pipeline: File → Canvas resize (≤800px) → WebP 60% → Base64
+  const handleThumb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setThumbFile(file);
-    setThumbPreview(URL.createObjectURL(file));
+
+    setThumbBase64(null);
+    setThumbPreview('');
+    setThumbSizeKB(null);
+    setErrors((p) => ({ ...p, thumb: '' }));
+    setProcessing(true);
+
+    try {
+      const base64 = await compressToWebPBase64(file, 800, 0.6);
+      setThumbBase64(base64);
+      setThumbPreview(base64);
+      setThumbSizeKB(estimateBase64SizeKB(base64));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memproses gambar.';
+      setErrors((p) => ({ ...p, thumb: msg }));
+    } finally {
+      setProcessing(false);
+      if (thumbInputRef.current) thumbInputRef.current.value = '';
+    }
   };
 
   const validate = () => {
@@ -105,12 +127,7 @@ export default function TambahJasaPage() {
     ev.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    setUploading(true);
     try {
-      const tempId = `temp_service_${Date.now()}`;
-      const thumbnailUrl = thumbFile ? await uploadThumbnail(thumbFile, tempId) : null;
-      setUploading(false);
-
       await createJasa({
         business_id: form.business_id.trim(),
         category_id: form.category_id,
@@ -130,7 +147,7 @@ export default function TambahJasaPage() {
         marketplace: form.marketplace.trim() || null,
         availability_type: form.availability_type,
         slug: form.slug || generateSlug(form.service_name),
-        thumbnail_url: thumbnailUrl,
+        thumbnail_url: thumbBase64,
         is_active: isActive,
       });
       router.push('/admin/jasa');
@@ -138,11 +155,10 @@ export default function TambahJasaPage() {
       setErrors({ global: 'Gagal menyimpan. Cek koneksi atau konfigurasi Firebase.' });
     } finally {
       setSubmitting(false);
-      setUploading(false);
     }
   };
 
-  const busy = submitting || uploading;
+  const busy = submitting || processing;
 
   return (
     <form className={styles.page} onSubmit={handleSubmit} noValidate>
@@ -175,7 +191,7 @@ export default function TambahJasaPage() {
             className={styles.btnPrimary}
             disabled={busy}
           >
-            {uploading ? 'Mengunggah...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
+            {processing ? 'Memproses...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
           </button>
         </div>
       </div>
@@ -471,7 +487,14 @@ export default function TambahJasaPage() {
                 style={{ display: 'none' }}
                 onClick={(e) => e.stopPropagation()}
               />
-              {thumbPreview ? (
+              {processing ? (
+                /* State: sedang proses Canvas */
+                <div className={styles.thumbZoneContent}>
+                  <div className={styles.uploadSpinner} />
+                  <span className={styles.thumbZoneText}>Memproses gambar...</span>
+                  <span className={styles.thumbZoneSub}>Resize & konversi ke WebP</span>
+                </div>
+              ) : thumbPreview ? (
                 <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
               ) : (
                 <div className={styles.thumbZoneContent}>
@@ -482,26 +505,42 @@ export default function TambahJasaPage() {
               )}
             </div>
 
-            {thumbPreview && (
+            {/* Error gambar */}
+            {errors.thumb && (
+              <div className={styles.errorBanner} style={{ marginTop: 8, fontSize: 12 }}>
+                ⚠️ {errors.thumb}
+              </div>
+            )}
+
+            {/* Info ukuran file setelah kompresi */}
+            {thumbSizeKB !== null && !errors.thumb && (
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                color: 'var(--text-muted, #888)',
+                textAlign: 'center',
+                padding: '4px 8px',
+                background: 'var(--surface-subtle, #f5f5f5)',
+                borderRadius: 6,
+              }}>
+                ✅ Foto terkompresi: <strong>~{thumbSizeKB} KB</strong> (WebP 800px, 60%)
+              </div>
+            )}
+
+            {thumbPreview && !processing && (
               <button
                 type="button"
                 className={styles.btnGhost}
                 style={{ marginTop: 8, width: '100%' }}
                 onClick={() => {
-                  setThumbFile(null);
+                  setThumbBase64(null);
                   setThumbPreview('');
+                  setThumbSizeKB(null);
                 }}
                 disabled={busy}
               >
                 Hapus Foto
               </button>
-            )}
-
-            {uploading && (
-              <div className={styles.uploadProgress}>
-                <div className={styles.uploadSpinner} />
-                Mengunggah ke Firebase Storage...
-              </div>
             )}
           </div>
         </div>

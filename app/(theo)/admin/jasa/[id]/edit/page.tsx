@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getJasaById, updateJasa } from '@/lib/firestore/jasa';
 import { generateSlug } from '@/lib/firestore/types';
 import { getCategories, getBusinesses } from '@/lib/firestore/data-loader';
-import { uploadThumbnail } from '@/lib/storage';
+import { compressToWebPBase64, estimateBase64SizeKB, downloadBase64AsWebP } from '@/lib/imageUtils';
 import type { Category, Business, PriceType, AvailabilityType, ServiceItem } from '@/lib/firestore/types';
 import styles from '../../form.module.css';
 
@@ -44,14 +44,16 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
     slug: '',
   });
 
-  const [newThumbFile, setNewThumbFile] = useState<File | null>(null);
+  const [thumbBase64, setThumbBase64] = useState<string | null>(null);
   const [thumbPreview, setThumbPreview] = useState('');
+  const [thumbSizeKB, setThumbSizeKB] = useState<number | null>(null);
+  const [hasNewThumb, setHasNewThumb] = useState(false);
 
   const [loadingData, setLoadingData] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [processing, setProcessing] = useState(false); // sedang kompresi Canvas
   const [submitting, setSubmitting] = useState(false);
   const [notFound, setNotFound] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global', string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | 'global' | 'thumb', string>>>({});
   const [isNegotiable, setIsNegotiable] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
@@ -78,7 +80,9 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
         service_description: data.service_description ?? '',
         slug: data.slug,
       });
+      setThumbBase64(data.thumbnail_url ?? null);
       setThumbPreview(data.thumbnail_url ?? '');
+      if (data.thumbnail_url) setThumbSizeKB(estimateBase64SizeKB(data.thumbnail_url));
       setIsNegotiable(data.is_negotiable);
       setIsActive(data.is_active);
       setCategories(cats.filter((c) => c.category_type === 'SERVICE'));
@@ -98,11 +102,33 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
     setErrors((p) => ({ ...p, [name]: '' }));
   };
 
-  const handleNewThumb = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Pipeline: File → Canvas resize (≤800px) → WebP 60% → Base64
+  const handleNewThumb = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setNewThumbFile(file);
-    setThumbPreview(URL.createObjectURL(file));
+
+    setHasNewThumb(true);
+    setThumbBase64(null);
+    setThumbPreview('');
+    setThumbSizeKB(null);
+    setErrors((p) => ({ ...p, thumb: '' }));
+    setProcessing(true);
+
+    try {
+      const base64 = await compressToWebPBase64(file, 800, 0.6);
+      setThumbBase64(base64);
+      setThumbPreview(base64);
+      setThumbSizeKB(estimateBase64SizeKB(base64));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memproses gambar.';
+      setErrors((p) => ({ ...p, thumb: msg }));
+      setThumbBase64(jasa?.thumbnail_url ?? null);
+      setThumbPreview(jasa?.thumbnail_url ?? '');
+      setHasNewThumb(false);
+    } finally {
+      setProcessing(false);
+      if (thumbInputRef.current) thumbInputRef.current.value = '';
+    }
   };
 
   const validate = () => {
@@ -134,13 +160,6 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
     if (!validate()) return;
     setSubmitting(true);
     try {
-      let finalThumb = jasa?.thumbnail_url ?? null;
-      if (newThumbFile) {
-        setUploading(true);
-        finalThumb = await uploadThumbnail(newThumbFile, id);
-        setUploading(false);
-      }
-
       await updateJasa(id, {
         business_id: form.business_id.trim(),
         category_id: form.category_id,
@@ -160,7 +179,7 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
         marketplace: form.marketplace.trim() || null,
         availability_type: form.availability_type,
         slug: form.slug || generateSlug(form.service_name),
-        thumbnail_url: finalThumb,
+        thumbnail_url: thumbBase64,
         is_active: isActive,
       });
       router.push('/admin/jasa');
@@ -168,11 +187,10 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
       setErrors({ global: 'Gagal memperbarui. Cek koneksi atau konfigurasi Firebase.' });
     } finally {
       setSubmitting(false);
-      setUploading(false);
     }
   };
 
-  const busy = submitting || uploading;
+  const busy = submitting || processing;
 
   if (loadingData) {
     return (
@@ -225,7 +243,7 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
             className={styles.btnPrimary}
             disabled={busy}
           >
-            {uploading ? 'Mengunggah...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
+            {processing ? 'Memproses...' : submitting ? 'Menyimpan...' : '✓ Simpan'}
           </button>
         </div>
       </div>
@@ -521,7 +539,14 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
                 style={{ display: 'none' }}
                 onClick={(e) => e.stopPropagation()}
               />
-              {thumbPreview ? (
+              {processing ? (
+                /* State: sedang proses Canvas */
+                <div className={styles.thumbZoneContent}>
+                  <div className={styles.uploadSpinner} />
+                  <span className={styles.thumbZoneText}>Memproses gambar...</span>
+                  <span className={styles.thumbZoneSub}>Resize & konversi ke WebP</span>
+                </div>
+              ) : thumbPreview ? (
                 <img className={styles.thumbPreviewImg} src={thumbPreview} alt="Thumbnail" />
               ) : (
                 <div className={styles.thumbZoneContent}>
@@ -532,25 +557,58 @@ export default function EditJasaPage({ params }: { params: Promise<{ id: string 
               )}
             </div>
 
-            {thumbPreview && (
-              <button
-                type="button"
-                className={styles.btnGhost}
-                style={{ marginTop: 8, width: '100%' }}
-                onClick={() => {
-                  setNewThumbFile(null);
-                  setThumbPreview('');
-                }}
-                disabled={busy}
-              >
-                Hapus Foto
-              </button>
+            {/* Error gambar */}
+            {errors.thumb && (
+              <div className={styles.errorBanner} style={{ marginTop: 8, fontSize: 12 }}>
+                ⚠️ {errors.thumb}
+              </div>
             )}
 
-            {uploading && (
-              <div className={styles.uploadProgress}>
-                <div className={styles.uploadSpinner} />
-                Mengunggah ke Firebase Storage...
+            {/* Info ukuran file setelah kompresi (hanya tampil jika ada foto baru) */}
+            {hasNewThumb && thumbSizeKB !== null && !errors.thumb && (
+              <div style={{
+                marginTop: 8,
+                fontSize: 11,
+                color: 'var(--text-muted, #888)',
+                textAlign: 'center',
+                padding: '4px 8px',
+                background: 'var(--surface-subtle, #f5f5f5)',
+                borderRadius: 6,
+              }}>
+                ✅ Foto terkompresi: <strong>~{thumbSizeKB} KB</strong> (WebP 800px, 60%)
+              </div>
+            )}
+
+            {/* Tombol aksi foto */}
+            {thumbPreview && !processing && (
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button
+                  type="button"
+                  className={styles.btnGhost}
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setThumbBase64(null);
+                    setThumbPreview('');
+                    setThumbSizeKB(null);
+                    setHasNewThumb(false);
+                  }}
+                  disabled={busy}
+                >
+                  Hapus Foto
+                </button>
+
+                {thumbBase64?.startsWith('data:') && (
+                  <button
+                    id={`btn-download-foto-${id}`}
+                    type="button"
+                    className={styles.btnGhost}
+                    style={{ flex: 1 }}
+                    onClick={() => downloadBase64AsWebP(thumbBase64, form.slug || id)}
+                    disabled={busy}
+                  >
+                    ⬇ Download
+                  </button>
+                )}
               </div>
             )}
           </div>
