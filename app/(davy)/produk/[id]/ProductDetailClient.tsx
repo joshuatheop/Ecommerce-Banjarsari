@@ -109,7 +109,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
           {/* TOP 2-COLUMN GRID */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(320px, 1.1fr) 1fr',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: 40,
           }} className="detail-grid">
 
@@ -157,7 +157,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
                 <div className="label-eyebrow" style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
                   Produk UMKM Kelurahan Banjarsari
                 </div>
-                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 3.5vw, 36px)', fontWeight: 700, margin: '0 0 12px', lineHeight: 1.2, color: 'var(--primary)' }}>
+                <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3.5vw, 36px)', fontWeight: 700, margin: '0 0 12px', lineHeight: 1.2, color: 'var(--primary)' }}>
                   {product.product_name}
                 </h1>
 
@@ -228,7 +228,7 @@ export default function ProductDetailClient({ product, business }: ProductDetail
 
               {/* CTA Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr auto' : '1fr auto', gap: 12 }}>
+                <div className="detail-cta-row" style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr auto' : '1fr auto', gap: 12 }}>
 
                   {/* WA button */}
                   {waNumber && (
@@ -320,7 +320,10 @@ export default function ProductDetailClient({ product, business }: ProductDetail
         @media (max-width: 768px) {
           .detail-grid {
             grid-template-columns: 1fr !important;
-            padding: 20px !important;
+            gap: 24px !important;
+          }
+          .detail-cta-row {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>

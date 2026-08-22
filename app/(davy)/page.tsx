@@ -42,7 +42,7 @@ export default async function Home() {
   return (
     <main>
       {/* HERO SECTION */}
-      <section style={{ paddingTop: 64, paddingBottom: 72, position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--white) 0%, var(--surface-2) 100%)" }}>
+      <section style={{ paddingTop: "clamp(32px, 5vw, 64px)", paddingBottom: "clamp(40px, 6vw, 72px)", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--white) 0%, var(--surface-2) 100%)" }}>
         <div className="container">
           <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 48, alignItems: "center" }} className="hero-grid">
             <div>
@@ -50,12 +50,12 @@ export default async function Home() {
                 Katalog Warga Kelurahan Banjarsari
               </div>
               <h1 className="display" style={{
-                fontSize: "clamp(36px, 5vw, 56px)", margin: "0 0 20px", lineHeight: 1.1, letterSpacing: "-0.02em",
+                fontSize: "clamp(28px, 5vw, 56px)", margin: "0 0 20px", lineHeight: 1.15, letterSpacing: "-0.02em",
                 color: "var(--primary)"
               }}>
                 Apa lu mau, <span style={{ color: "var(--primary)", borderBottom: "3px solid var(--secondary)" }}>tetangga ada.</span>
               </h1>
-              <p style={{ fontSize: 18, color: "var(--dark)", opacity: 0.8, maxWidth: 540, lineHeight: 1.6, margin: "0 0 32px" }}>
+              <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--dark)", opacity: 0.8, maxWidth: 540, lineHeight: 1.6, margin: "0 0 32px" }}>
                 Temukan {products.length + services.length} produk unggulan dan layanan jasa terpercaya dari {businesses.length} pelaku UMKM mandiri di lingkungan Kelurahan Banjarsari. Belanja dekat, hemat ongkir, majukan tetangga.
               </p>
 
@@ -69,18 +69,18 @@ export default async function Home() {
               </div>
 
               {/* STATS */}
-              <div style={{ display: "flex", gap: 32, marginTop: 48, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "clamp(16px, 4vw, 32px)", marginTop: "clamp(24px, 4vw, 48px)", flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{businesses.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>UMKM Aktif</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "var(--primary)" }}>{businesses.length}</div>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>UMKM Aktif</div>
                 </div>
                 <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{products.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Produk Warga</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "var(--primary)" }}>{products.length}</div>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Produk Warga</div>
                 </div>
                 <div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 700, color: "var(--primary)" }}>{services.length}</div>
-                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Layanan Jasa</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 4vw, 32px)", fontWeight: 700, color: "var(--primary)" }}>{services.length}</div>
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.7 }}>Layanan Jasa</div>
                 </div>
               </div>
             </div>
@@ -93,9 +93,10 @@ export default async function Home() {
                 position: "relative",
                 boxShadow: "0 24px 50px rgba(1, 48, 32, 0.18)",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between",
-                padding: "32px 24px", textAlign: "center", minHeight: 460,
+                padding: "clamp(20px, 4vw, 32px) clamp(16px, 3vw, 24px)", textAlign: "center", minHeight: "clamp(380px, 45vh, 460px)",
                 border: "1px solid rgba(255, 255, 255, 0.1)"
               }}>
+
                 {/* Background ambient lighting */}
                 <div style={{
                   position: "absolute", top: "-15%", right: "-10%", width: 260, height: 260,

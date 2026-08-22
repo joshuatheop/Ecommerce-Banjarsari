@@ -1,0 +1,373 @@
+/* ============================================================
+   DAVY RESPONSIVE DESIGN SYSTEM & MOBILE OVERRIDES
+   Target Viewports: 320px, 375px, 390px, 414px, 480px, 768px
+   ============================================================ */
+
+/* Enforce smooth root sizing & box sizing safety */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.davy-theme {
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   TABLET & MOBILE BREAKPOINT: <= 980px
+   ============================================================ */
+@media (max-width: 980px) {
+  .davy-theme .container,
+  .davy-theme .container-narrow,
+  .davy-theme .fl-container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .davy-theme .header-inner {
+    gap: 16px;
+  }
+
+  .davy-theme .search-box {
+    max-width: 320px;
+  }
+}
+
+/* ============================================================
+   TABLET BREAKPOINT: <= 768px
+   ============================================================ */
+@media (max-width: 768px) {
+  .davy-theme .container,
+  .davy-theme .container-narrow,
+  .davy-theme .fl-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  /* ---- Header & Navbar Mobile Adaptation ---- */
+  .davy-theme .header {
+    padding: 10px 0;
+  }
+
+  .davy-theme .header-inner {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
+  .davy-theme .brand {
+    font-size: 18px;
+    gap: 8px;
+  }
+
+  .davy-theme .brand-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .davy-theme .header-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    display: flex;
+    gap: 4px;
+  }
+
+  .davy-theme .header-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .davy-theme .header-nav a {
+    padding: 6px 12px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .davy-theme .search-box {
+    order: 2;
+    flex: 1;
+    min-width: 160px;
+    max-width: 100%;
+  }
+
+  .davy-theme .search-box .input {
+    height: 36px;
+    font-size: 13px;
+  }
+
+  /* ---- Section Headings ---- */
+  .davy-theme .section {
+    padding: 36px 0;
+  }
+
+  .davy-theme .section-tight {
+    padding: 24px 0;
+  }
+
+  .davy-theme .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .davy-theme .section-head h2 {
+    font-size: 24px;
+  }
+
+  .davy-theme .section-head p {
+    font-size: 14px;
+  }
+
+  /* ---- Most Favorite Section Overrides ---- */
+  .davy-theme .fl-fav-section {
+    padding: 36px 0;
+  }
+
+  .davy-theme .fl-fav-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .davy-theme .fl-rank-row {
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  .davy-theme .fl-rank-num {
+    font-size: 22px;
+    width: 24px;
+  }
+
+  .davy-theme .fl-rank-thumb {
+    width: 48px;
+    height: 48px;
+  }
+
+  .davy-theme .fl-rank-title {
+    font-size: 14px;
+  }
+
+  .davy-theme .fl-rank-business {
+    font-size: 11.5px;
+  }
+
+  .davy-theme .fl-rank-clicks {
+    font-size: 12.5px;
+  }
+
+  /* ---- Footer Overrides ---- */
+  .davy-theme .footer {
+    padding: 36px 0 20px;
+  }
+
+  .davy-theme .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .davy-theme .footer-brand h3 {
+    font-size: 20px;
+  }
+
+  .davy-theme .footer-brand p {
+    max-width: 100%;
+  }
+
+  /* ---- Detail Cards (Product & Service) ---- */
+  .davy-theme .detail-card {
+    padding: 20px !important;
+    gap: 20px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .davy-theme .detail-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* ---- Catalog Hero Banner ---- */
+  .davy-theme .fl-hero-banner {
+    padding: 32px 16px;
+  }
+
+  .davy-theme .fl-hero-text-outline {
+    font-size: clamp(28px, 6vw, 48px) !important;
+    letter-spacing: 0.04em !important;
+    -webkit-text-stroke: 1px rgba(205, 255, 0, 0.7) !important;
+  }
+
+  .davy-theme .fl-hero-text-solid {
+    font-size: clamp(22px, 4vw, 36px) !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  /* ---- Catalog Layout & Controls ---- */
+  .davy-theme .fl-page-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .davy-theme .fl-type-tabs {
+    width: 100%;
+  }
+
+  .davy-theme .fl-type-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    font-size: 11.5px;
+  }
+}
+
+/* ============================================================
+   MOBILE BREAKPOINT: <= 520px
+   ============================================================ */
+@media (max-width: 520px) {
+  .davy-theme .container,
+  .davy-theme .container-narrow,
+  .davy-theme .fl-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* ---- Buttons ---- */
+  .davy-theme .btn-lg {
+    padding: 12px 18px;
+    font-size: 14px;
+    width: 100%;
+  }
+
+  /* ---- Hero Grid & Text ---- */
+  .davy-theme .hero-grid {
+    gap: 24px !important;
+  }
+
+  /* ---- Product Cards Grid ---- */
+  .davy-theme .grid-products {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .davy-theme .product-card .body {
+    padding: 10px 12px 14px;
+  }
+
+  .davy-theme .product-card h3 {
+    font-size: 14px;
+  }
+
+  .davy-theme .product-card .price {
+    font-size: 15px;
+  }
+
+  /* ---- Catalog Toolbar ---- */
+  .davy-theme .fl-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .davy-theme .fl-result-count {
+    font-size: 12px;
+  }
+
+  .davy-theme .fl-sort-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .davy-theme .fl-sort-select-wrap {
+    flex: 1;
+  }
+
+  .davy-theme .fl-sort-select {
+    width: 100%;
+  }
+
+  .davy-theme .fl-mobile-filter-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+    font-size: 13px;
+  }
+
+  /* ---- Catalog Grid ---- */
+  .davy-theme .fl-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* ---- Footlocker Cards ---- */
+  .davy-theme .fl-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .davy-theme .fl-card-body {
+    padding: 10px 10px 12px;
+  }
+
+  .davy-theme .fl-card-name {
+    font-size: 12.5px;
+  }
+
+  .davy-theme .fl-card-price {
+    font-size: 14px;
+  }
+
+  /* ---- Detail Page CTA Actions ---- */
+  .davy-theme .detail-cta-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ---- Business Profile Cards ---- */
+  .davy-theme .biz-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============================================================
+   EXTRA SMALL MOBILE BREAKPOINT: <= 375px
+   ============================================================ */
+@media (max-width: 375px) {
+  .davy-theme .grid-products,
+  .davy-theme .fl-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .davy-theme .fl-rank-row {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .davy-theme .fl-rank-num {
+    font-size: 18px;
+    width: 20px;
+  }
+
+  .davy-theme .fl-rank-thumb {
+    width: 40px;
+    height: 40px;
+  }
+
+  .davy-theme .fl-rank-title {
+    font-size: 13px;
+  }
+
+  .davy-theme .fl-type-tab {
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+}
