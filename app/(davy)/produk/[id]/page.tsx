@@ -11,6 +11,26 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+function getOgImageUrl(
+  thumbnailUrl: string | null | undefined,
+  logoUrl: string | null | undefined,
+  baseUrl: string
+): string {
+  if (thumbnailUrl && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'))) {
+    return thumbnailUrl;
+  }
+  if (thumbnailUrl && thumbnailUrl.startsWith('/')) {
+    return `${baseUrl}${thumbnailUrl}`;
+  }
+  if (logoUrl && (logoUrl.startsWith('http://') || logoUrl.startsWith('https://'))) {
+    return logoUrl;
+  }
+  if (logoUrl && logoUrl.startsWith('/')) {
+    return `${baseUrl}${logoUrl}`;
+  }
+  return `${baseUrl}/logo-banjarsari.png`;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const product = await getProduct(id);
@@ -24,17 +44,36 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     business?.business_name ?? null
   );
 
-  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://umkm-banjarsari.com';
+  const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://palugada.banjarsarigarut.id';
+  const imageUrl = getOgImageUrl(product.thumbnail_url, business?.business_logo_url, BASE_URL);
+  const title = seo?.title || fallback.title;
+  const description = seo?.description || fallback.description;
+  const ogTitle = seo?.ogTitle || title;
+  const ogDescription = seo?.ogDescription || description;
 
   return {
-    title:       seo?.title       || fallback.title,
-    description: seo?.description || fallback.description,
+    title,
+    description,
     openGraph: {
-      title:       seo?.ogTitle       || seo?.title       || fallback.title,
-      description: seo?.ogDescription || seo?.description || fallback.description,
+      title:       ogTitle,
+      description: ogDescription,
       url:         `${BASE_URL}/produk/${id}`,
       type:        'website',
-      siteName:    'UMKM Banjarsari',
+      siteName:    'PALUGADA Banjarsari',
+      images: [
+        {
+          url: imageUrl,
+          width: 800,
+          height: 600,
+          alt: product.product_name,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description: ogDescription,
+      images: [imageUrl],
     },
   };
 }

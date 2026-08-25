@@ -4,21 +4,29 @@ import { db } from '@/lib/firebase';
 const STORAGE_KEY_PRODUCTS = 'banjarsari_fav_products';
 const STORAGE_KEY_SERVICES = 'banjarsari_fav_services';
 
+function getProductKey(userId?: string) {
+  return userId ? `${STORAGE_KEY_PRODUCTS}_${userId}` : STORAGE_KEY_PRODUCTS;
+}
+
+function getServiceKey(userId?: string) {
+  return userId ? `${STORAGE_KEY_SERVICES}_${userId}` : STORAGE_KEY_SERVICES;
+}
+
 // Local Storage Helpers
-export function getFavoriteProductIds(): string[] {
-  if (typeof window === 'undefined') return [];
+export function getFavoriteProductIds(userId?: string): string[] {
+  if (typeof window === 'undefined' || !userId) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_PRODUCTS);
+    const raw = localStorage.getItem(getProductKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export function getFavoriteServiceIds(): string[] {
-  if (typeof window === 'undefined') return [];
+export function getFavoriteServiceIds(userId?: string): string[] {
+  if (typeof window === 'undefined' || !userId) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_SERVICES);
+    const raw = localStorage.getItem(getServiceKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -26,27 +34,31 @@ export function getFavoriteServiceIds(): string[] {
 }
 
 // Save Local Storage
-function setFavoriteProductIds(ids: string[]) {
-  if (typeof window === 'undefined') return;
+function setFavoriteProductIds(ids: string[], userId?: string) {
+  if (typeof window === 'undefined' || !userId) return;
   try {
-    localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(ids));
+    localStorage.setItem(getProductKey(userId), JSON.stringify(ids));
   } catch (err) {
     console.error('Failed to save product favorites to localStorage:', err);
   }
 }
 
-function setFavoriteServiceIds(ids: string[]) {
-  if (typeof window === 'undefined') return;
+function setFavoriteServiceIds(ids: string[], userId?: string) {
+  if (typeof window === 'undefined' || !userId) return;
   try {
-    localStorage.setItem(STORAGE_KEY_SERVICES, JSON.stringify(ids));
+    localStorage.setItem(getServiceKey(userId), JSON.stringify(ids));
   } catch (err) {
     console.error('Failed to save service favorites to localStorage:', err);
   }
 }
 
 // Toggle Product Favorite
-export async function toggleProductFavoriteInFirestore(productId: string): Promise<{ isFavorited: boolean; delta: number }> {
-  const currentFavs = getFavoriteProductIds();
+export async function toggleProductFavoriteInFirestore(productId: string, userId?: string): Promise<{ isFavorited: boolean; delta: number }> {
+  if (!userId) {
+    return { isFavorited: false, delta: 0 };
+  }
+
+  const currentFavs = getFavoriteProductIds(userId);
   const index = currentFavs.indexOf(productId);
   const isFavorited = index !== -1;
 
@@ -61,7 +73,7 @@ export async function toggleProductFavoriteInFirestore(productId: string): Promi
     delta = 1;
   }
 
-  setFavoriteProductIds(newFavs);
+  setFavoriteProductIds(newFavs, userId);
 
   // Sync to Firestore
   try {
@@ -80,8 +92,12 @@ export async function toggleProductFavoriteInFirestore(productId: string): Promi
 }
 
 // Toggle Service Favorite
-export async function toggleServiceFavoriteInFirestore(serviceId: string): Promise<{ isFavorited: boolean; delta: number }> {
-  const currentFavs = getFavoriteServiceIds();
+export async function toggleServiceFavoriteInFirestore(serviceId: string, userId?: string): Promise<{ isFavorited: boolean; delta: number }> {
+  if (!userId) {
+    return { isFavorited: false, delta: 0 };
+  }
+
+  const currentFavs = getFavoriteServiceIds(userId);
   const index = currentFavs.indexOf(serviceId);
   const isFavorited = index !== -1;
 
@@ -96,7 +112,7 @@ export async function toggleServiceFavoriteInFirestore(serviceId: string): Promi
     delta = 1;
   }
 
-  setFavoriteServiceIds(newFavs);
+  setFavoriteServiceIds(newFavs, userId);
 
   // Sync to Firestore
   try {
