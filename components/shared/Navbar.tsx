@@ -51,7 +51,7 @@ function NavLinks({ onLinkClick }: { onLinkClick?: () => void }) {
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, photoURL, displayName } = useAuth();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -186,10 +186,11 @@ export default function Navbar() {
                         aria-label="Menu akun"
                         aria-expanded={dropdownOpen}
                       >
-                        {user.photoURL ? (
-                          <Image
-                            src={user.photoURL}
-                            alt={user.displayName ?? 'Foto profil'}
+                        {photoURL || user.photoURL ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={photoURL || user.photoURL || ''}
+                            alt={displayName ?? user.displayName ?? 'Foto profil'}
                             width={38}
                             height={38}
                             style={{ objectFit: 'cover', width: '100%', height: '100%' }}
@@ -204,7 +205,7 @@ export default function Navbar() {
                             textTransform: 'uppercase',
                             lineHeight: 1,
                           }}>
-                            {(user.displayName ?? user.email ?? 'U').charAt(0)}
+                            {(displayName ?? user.displayName ?? user.email ?? 'U').charAt(0)}
                           </span>
                         )}
                       </button>
@@ -445,22 +446,23 @@ export default function Navbar() {
           <div className="mobile-drawer-user">
             <div className="mobile-drawer-user-info">
               <div className="mobile-drawer-avatar">
-                {user.photoURL ? (
-                  <Image
-                    src={user.photoURL}
-                    alt={user.displayName ?? 'Foto profil'}
+                {photoURL || user.photoURL ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={photoURL || user.photoURL || ''}
+                    alt={displayName ?? user.displayName ?? 'Foto profil'}
                     width={40}
                     height={40}
                     style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '50%' }}
                   />
                 ) : (
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--primary)', textTransform: 'uppercase' }}>
-                    {(user.displayName ?? user.email ?? 'U').charAt(0)}
+                    {(displayName ?? user.displayName ?? user.email ?? 'U').charAt(0)}
                   </span>
                 )}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--dark)' }}>{user.displayName ?? 'Pengguna'}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--dark)' }}>{displayName ?? user.displayName ?? 'Pengguna'}</div>
                 <div style={{ fontSize: 12, color: 'var(--primary)', opacity: 0.7 }}>{user.email}</div>
               </div>
             </div>

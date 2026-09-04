@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { subscribeAnalytics } from '@/lib/firestore/analytics';
 import type { DashboardStats, EventType } from '@/lib/firestore/analytics';
+import { getAllProduk } from '@/lib/firestore/produk';
+import { getAllBisnis } from '@/lib/firestore/bisnis';
 import styles from './dashboard.module.css';
 
 /* ============================================================
@@ -504,13 +506,30 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'daily' | 'monthly'>('daily');
+  const [topProductsFromDb, setTopProductsFromDb] = useState<{ name: string; businessName?: string; count: number; thumb?: string | null }[]>([]);
 
-  // Subscribe realtime ke Firestore
+  // Subscribe realtime ke Firestore & load produk clickCount
   useEffect(() => {
     const unsub = subscribeAnalytics(
       (data) => { setStats(data); setLoading(false); },
       () => { setLoading(false); },
     );
+
+    Promise.all([getAllProduk(), getAllBisnis()]).then(([products, businesses]) => {
+      const bMap = new Map(businesses.map((b) => [b.business_id, b.business_name]));
+      const sorted = products
+        .filter((p) => !p.deletedAt && p.is_active !== false)
+        .sort((a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0))
+        .slice(0, 6)
+        .map((p) => ({
+          name: p.product_name,
+          businessName: bMap.get(p.business_id) || 'UMKM Banjarsari',
+          count: p.clickCount ?? 0,
+          thumb: p.thumbnail_url,
+        }));
+      setTopProductsFromDb(sorted);
+    });
+
     return () => unsub();
   }, []);
 
@@ -640,24 +659,39 @@ export default function AdminDashboardPage() {
           <div className={styles.itemList}>
             {loading ? (
               [1, 2, 3, 4, 5, 6].map((i) => <div key={i} className={`${styles.itemRow} ${styles.skeleton}`} style={{ height: 44 }} />)
-            ) : stats?.topProducts.length === 0 ? (
-              <p className={styles.emptyText}>Belum ada data.</p>
-            ) : (
-              stats?.topProducts.map((it, i) => (
+            ) : (() => {
+              const displayList: { name: string; businessName?: string; count: number; thumb?: string | null }[] =
+                topProductsFromDb.length > 0
+                  ? topProductsFromDb
+                  : (stats?.topProducts ?? []).map((p) => ({ name: p.name, businessName: 'UMKM Banjarsari', count: p.count, thumb: null }));
+
+              if (displayList.length === 0) {
+                return <p className={styles.emptyText}>Belum ada data.</p>;
+              }
+
+              return displayList.map((it, i) => (
                 <div key={i} className={`${styles.itemRow} ${i > 0 ? styles.itemRowBorder : ''}`}>
                   <span className={styles.rank}>#{i + 1}</span>
-                  <div
-                    className={styles.itemThumb}
-                    style={{ background: ['#AADCAB', '#05472B', '#00C0A3', '#013020', '#CDFF00', '#AADCAB'][i % 6] }}
-                  />
+                  {it.thumb ? (
+                    <img
+                      src={it.thumb}
+                      alt={it.name}
+                      style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div
+                      className={styles.itemThumb}
+                      style={{ background: ['#AADCAB', '#05472B', '#00C0A3', '#013020', '#CDFF00', '#AADCAB'][i % 6] }}
+                    />
+                  )}
                   <div className={styles.itemMeta}>
                     <div className={styles.itemName}>{it.name}</div>
-                    <div className={styles.itemSub}>{it.count} klik</div>
+                    <div className={styles.itemSub}>{it.businessName || 'UMKM Banjarsari'}</div>
                   </div>
                   <span className={styles.itemClicks}>{it.count}</span>
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
         </div>
 

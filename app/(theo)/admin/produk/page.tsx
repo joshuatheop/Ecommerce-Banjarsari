@@ -208,6 +208,7 @@ export default function AdminProdukPage() {
                   <th>Produk</th>
                   <th>Kategori</th>
                   <th>Harga</th>
+                  <th>Total Klik</th>
                   <th>Status</th>
                   <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
                 </tr>
@@ -246,6 +247,11 @@ export default function AdminProdukPage() {
                     <td>
                       <span className={styles.mono} style={{ fontWeight: 600 }}>
                         {formatRp(p.product_price)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.mono} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                        🔥 {p.clickCount ?? 0}
                       </span>
                     </td>
                     <td>
