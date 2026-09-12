@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import type { ProdukItem, ServiceItem } from '@/lib/firestore/types';
-import { useFavorites } from '@/context/FavoritesContext';
 
 interface RankRowProps {
   rank: number;
@@ -22,10 +21,6 @@ export default function RankRow({ rank, item, type, businessName }: RankRowProps
   const categoryId   = item.category_id;
   const href         = isProduct ? `/produk/${id}` : `/layanan/${id}`;
 
-  const { getLikes } = useFavorites();
-  const initialLikes = item.like_count ?? 0;
-  const currentLikes = getLikes(id, initialLikes);
-
   return (
     <Link href={href} className="fl-rank-row">
       <div className={`fl-rank-num rank-${rank}`}>
@@ -43,16 +38,9 @@ export default function RankRow({ rank, item, type, businessName }: RankRowProps
         )}
       </div>
 
-      <div className="fl-rank-info">
+      <div className="fl-rank-info" style={{ flex: 1, minWidth: 0 }}>
         <h4 className="fl-rank-title">{name}</h4>
         <p className="fl-rank-business">{businessName}</p>
-      </div>
-
-      <div className="fl-rank-stats">
-        <div className="fl-rank-clicks" style={{ color: '#e11d48', fontWeight: 700, fontSize: 13 }}>
-          ❤️ {currentLikes}
-        </div>
-        <div className="fl-rank-label">Disukai</div>
       </div>
     </Link>
   );

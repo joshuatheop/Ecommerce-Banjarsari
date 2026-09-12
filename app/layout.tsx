@@ -1,21 +1,6 @@
 import type { Metadata } from 'next';
-import { JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-heading',
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-body',
-  weight: ['300', '400', '500', '600', '700', '800'],
-  display: 'swap',
-});
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://palugada.banjarsarigarut.id';
 
@@ -55,7 +40,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${jetbrainsMono.variable} ${plusJakartaSans.variable}`}>
+    <html lang="id">
       <body className="theo-theme">
         <AuthProvider>{children}</AuthProvider>
       </body>

@@ -76,16 +76,35 @@ const CatalogContainer = ({
 
   const handleSwitchType = (newType: 'product' | 'service') => {
     setType(newType);
-    setActiveCategory('');
+    setActiveCategories(new Set());
+    setActiveAreas(new Set());
     router.replace(`/katalog?type=${newType}`, { scroll: false });
   };
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
-  const [activeArea, setActiveArea] = useState('');
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(
+    initialCategory ? new Set([initialCategory]) : new Set()
+  );
+  const [activeAreas, setActiveAreas] = useState<Set<string>>(new Set());
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc'>('popular');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  const toggleCategory = (id: string) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleArea = (area: string) => {
+    setActiveAreas((prev) => {
+      const next = new Set(prev);
+      if (next.has(area)) next.delete(area); else next.add(area);
+      return next;
+    });
+  };
 
   const businessMap = useMemo(
     () => new Map(businesses.map((b) => [b.business_id, b.business_name])),
@@ -99,8 +118,8 @@ const CatalogContainer = ({
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
-    if (activeCategory) list = list.filter((p) => p.category_id === activeCategory);
-    if (activeArea) list = list.filter((p) => businessAreaMap.get(p.business_id) === activeArea);
+    if (activeCategories.size > 0) list = list.filter((p) => activeCategories.has(p.category_id));
+    if (activeAreas.size > 0) list = list.filter((p) => activeAreas.has(businessAreaMap.get(p.business_id) ?? ''));
     if (searchQuery) list = list.filter((p) =>
       p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.product_description || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -116,14 +135,15 @@ const CatalogContainer = ({
 
     if (sortBy === 'price-asc') list.sort((a, b) => a.product_price - b.product_price);
     else if (sortBy === 'price-desc') list.sort((a, b) => b.product_price - a.product_price);
+    else list.sort((a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0));
     return list;
-  }, [products, activeCategory, activeArea, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
+  }, [products, activeCategories, activeAreas, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
 
   // Filter & sort services
   const filteredServices = useMemo(() => {
     let list = [...services];
-    if (activeCategory) list = list.filter((s) => s.category_id === activeCategory);
-    if (activeArea) list = list.filter((s) => businessAreaMap.get(s.business_id) === activeArea);
+    if (activeCategories.size > 0) list = list.filter((s) => activeCategories.has(s.category_id));
+    if (activeAreas.size > 0) list = list.filter((s) => activeAreas.has(businessAreaMap.get(s.business_id) ?? ''));
     if (searchQuery) list = list.filter((s) =>
       s.service_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.service_description || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -139,8 +159,9 @@ const CatalogContainer = ({
 
     if (sortBy === 'price-asc') list.sort((a, b) => (a.minimum_price ?? 0) - (b.minimum_price ?? 0));
     else if (sortBy === 'price-desc') list.sort((a, b) => (b.minimum_price ?? 0) - (a.minimum_price ?? 0));
+    else list.sort((a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0));
     return list;
-  }, [services, activeCategory, activeArea, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
+  }, [services, activeCategories, activeAreas, searchQuery, minPrice, maxPrice, sortBy, businessAreaMap]);
 
   // Categories visible for current type
   const visibleCategories = useMemo(
@@ -155,7 +176,12 @@ const CatalogContainer = ({
   const currentItems = type === 'product' ? filteredProducts : filteredServices;
   const totalCount = currentItems.length;
   const hasPriceFilter = minPrice !== '' || maxPrice !== '';
-  const activeFiltersCount = [activeCategory, activeArea, searchQuery, hasPriceFilter ? 'price' : ''].filter(Boolean).length;
+  const activeFiltersCount = [
+    ...activeCategories,
+    ...activeAreas,
+    searchQuery,
+    hasPriceFilter ? 'price' : '',
+  ].filter(Boolean).length;
 
   const categoryMap = useMemo(
     () => new Map(categories.map((c) => [c.category_id, c.category_name])),
@@ -163,8 +189,8 @@ const CatalogContainer = ({
   );
 
   const resetFilters = () => {
-    setActiveCategory('');
-    setActiveArea('');
+    setActiveCategories(new Set());
+    setActiveAreas(new Set());
     setSearchQuery('');
     setMinPrice('');
     setMaxPrice('');
@@ -255,38 +281,38 @@ const CatalogContainer = ({
               </div>
             </FilterGroup>
 
-            <FilterGroup title="Kategori">
+            <FilterGroup title="Kategori" count={activeCategories.size}>
               <label className="fl-check-row">
                 <input
                   type="checkbox"
                   className="fl-checkbox"
-                  checked={activeCategory === ''}
-                  onChange={() => setActiveCategory('')}
+                  checked={activeCategories.size === 0}
+                  onChange={() => setActiveCategories(new Set())}
                   readOnly
                 />
                 <span className="fl-check-label">Semua</span>
-                <span className="fl-check-count">({currentItems.length})</span>
+                <span className="fl-check-count">({(type === 'product' ? products : services).length})</span>
               </label>
               {visibleCategories.map((c) => (
                 <label key={c.category_id} className="fl-check-row">
                   <input
                     type="checkbox"
                     className="fl-checkbox"
-                    checked={activeCategory === c.category_id}
-                    onChange={() => setActiveCategory(activeCategory === c.category_id ? '' : c.category_id)}
+                    checked={activeCategories.has(c.category_id)}
+                    onChange={() => toggleCategory(c.category_id)}
                   />
                   <span className="fl-check-label">{c.icon} {c.category_name}</span>
                 </label>
               ))}
             </FilterGroup>
 
-            <FilterGroup title="Area" count={activeArea ? 1 : 0}>
+            <FilterGroup title="Area" count={activeAreas.size}>
               <label className="fl-check-row">
                 <input
                   type="checkbox"
                   className="fl-checkbox"
-                  checked={activeArea === ''}
-                  onChange={() => setActiveArea('')}
+                  checked={activeAreas.size === 0}
+                  onChange={() => setActiveAreas(new Set())}
                 />
                 <span className="fl-check-label">Semua Area</span>
               </label>
@@ -295,8 +321,8 @@ const CatalogContainer = ({
                   <input
                     type="checkbox"
                     className="fl-checkbox"
-                    checked={activeArea === a}
-                    onChange={() => setActiveArea(activeArea === a ? '' : a)}
+                    checked={activeAreas.has(a)}
+                    onChange={() => toggleArea(a)}
                   />
                   <span className="fl-check-label">{a}</span>
                 </label>
@@ -379,18 +405,18 @@ const CatalogContainer = ({
               </div>
             </div>
 
-            {(activeCategory || activeArea || hasPriceFilter || searchQuery) && (
+            {(activeCategories.size > 0 || activeAreas.size > 0 || hasPriceFilter || searchQuery) && (
               <div className="fl-active-filters">
-                {activeCategory && (
-                  <button className="fl-pill" onClick={() => setActiveCategory('')}>
-                    {categoryMap.get(activeCategory) || activeCategory} <span>x</span>
+                {[...activeCategories].map((catId) => (
+                  <button key={catId} className="fl-pill" onClick={() => toggleCategory(catId)}>
+                    {categoryMap.get(catId) || catId} <span>x</span>
                   </button>
-                )}
-                {activeArea && (
-                  <button className="fl-pill" onClick={() => setActiveArea('')}>
-                    {activeArea} <span>x</span>
+                ))}
+                {[...activeAreas].map((area) => (
+                  <button key={area} className="fl-pill" onClick={() => toggleArea(area)}>
+                    {area} <span>x</span>
                   </button>
-                )}
+                ))}
                 {hasPriceFilter && (
                   <button className="fl-pill" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>
                     Rp {minPrice ? Number(minPrice).toLocaleString('id-ID') : '0'} - {maxPrice ? `Rp ${Number(maxPrice).toLocaleString('id-ID')}` : 'Tak Terbatas'} <span>x</span>

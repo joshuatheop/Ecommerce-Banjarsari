@@ -9,7 +9,6 @@ import { Icons } from '@/components/shared/Icons';
 import BusinessLocationMap from '@/components/shared/BusinessLocationMap';
 import ReviewSection from '@/components/shared/ReviewSection';
 import Link from 'next/link';
-import { useFavorites } from '@/context/FavoritesContext';
 
 interface ServiceDetailClientProps {
   service: ServiceItem;
@@ -17,9 +16,6 @@ interface ServiceDetailClientProps {
 }
 
 export default function ServiceDetailClient({ service, business }: ServiceDetailClientProps) {
-  const { isServiceFavorited, toggleServiceFav, getLikes } = useFavorites();
-  const isFav = isServiceFavorited(service.service_id);
-  const currentLikes = getLikes(service.service_id, service.like_count ?? 0);
   const tracked = useRef(false);
   // Auto-increment page views as analytics event — hanya 1x per mount
   useEffect(() => {
@@ -221,15 +217,22 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
 
               {/* Business owner card */}
               {business && (
-                <div style={{
-                  background: 'var(--surface-2)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 20,
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  gap: 16,
-                  alignItems: 'center'
-                }}>
+                <Link
+                  href={`/bisnis/${business.business_id}`}
+                  style={{
+                    background: 'var(--surface-2)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '16px 20px',
+                    border: '1px solid var(--line)',
+                    display: 'flex',
+                    gap: 16,
+                    alignItems: 'center',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                  }}
+                  className="umkm-profile-card"
+                >
                   <div style={{
                     width: 52,
                     height: 52,
@@ -239,16 +242,34 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                     display: 'grid',
                     placeItems: 'center',
                     fontSize: 22,
-                    fontWeight: 700
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    overflow: 'hidden',
                   }}>
-                    {business.business_name.charAt(0)}
+                    {business.business_logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={business.business_logo_url}
+                        alt={business.business_name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      business.business_name.charAt(0)
+                    )}
                   </div>
-                  <div>
-                    <div style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>PENYEDIA JASA</div>
-                    <h4 style={{ margin: '2px 0 4px', fontSize: 16, fontWeight: 700, color: 'var(--primary)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                        PENYEDIA JASA
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700 }}>
+                        • Kunjungi Profil &rarr;
+                      </span>
+                    </div>
+                    <h4 style={{ margin: '2px 0 4px', fontSize: 16, fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {business.business_name}
                     </h4>
-                    <div style={{ display: 'flex', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <div style={{ display: 'flex', gap: 10, fontSize: 13, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
                       {business.owner_name && <span>Pemilik: <strong>{business.owner_name}</strong></span>}
                       {business.area_name && (
                         <>
@@ -260,12 +281,15 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                       )}
                     </div>
                   </div>
-                </div>
+                  <div style={{ color: 'var(--primary)', opacity: 0.6, fontSize: 18, marginLeft: 'auto', flexShrink: 0 }}>
+                    <Icons.ArrowRight />
+                  </div>
+                </Link>
               )}
 
               {/* CTA Actions */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-                <div className="detail-cta-row" style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr auto' : '1fr auto', gap: 12 }}>
+                <div className="detail-cta-row" style={{ display: 'grid', gridTemplateColumns: marketplaceUrl ? '1fr 1fr' : '1fr', gap: 12 }}>
 
                   {/* WA button */}
                   {waNumber && (
@@ -288,41 +312,6 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
                       <Icons.ShoppingBag /> Beli di Marketplace
                     </button>
                   )}
-
-                  {/* Favorite / Love button */}
-                  <button
-                    onClick={() => toggleServiceFav(service.service_id, service.like_count ?? 0)}
-                    className="btn btn-lg"
-                    style={{
-                      height: 48,
-                      padding: '0 20px',
-                      borderRadius: 'var(--radius-md)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontWeight: 600,
-                      color: isFav ? '#e11d48' : 'var(--primary)',
-                      background: isFav ? 'rgba(225, 29, 72, 0.12)' : 'var(--surface-2)',
-                      border: `1.5px solid ${isFav ? '#e11d48' : 'var(--line)'}`,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill={isFav ? '#e11d48' : 'none'}
-                      stroke={isFav ? '#e11d48' : 'currentColor'}
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                    <span>{isFav ? 'Disukai' : 'Sukai'}</span>
-                    <span style={{ fontSize: 13, opacity: 0.8, fontFamily: 'var(--font-mono)' }}>({currentLikes})</span>
-                  </button>
 
                 </div>
               </div>
@@ -354,6 +343,12 @@ export default function ServiceDetailClient({ service, business }: ServiceDetail
       </div>
 
       <style>{`
+        .umkm-profile-card:hover {
+          background: var(--surface-3) !important;
+          border-color: var(--primary) !important;
+          transform: translateY(-2px);
+          box-shadow: var(--shadow);
+        }
         @media (max-width: 768px) {
           .detail-grid {
             grid-template-columns: 1fr !important;

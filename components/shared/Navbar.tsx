@@ -23,7 +23,7 @@ function NavLinks({ onLinkClick }: { onLinkClick?: () => void }) {
     if (!pathname) return;
     const queryStr = searchParams ? searchParams.toString() : '';
     const fullPath = queryStr ? `${pathname}?${queryStr}` : pathname;
-    
+
     trackClickEvent('page_view', {
       itemName: `Halaman: ${pathname}`,
       marketplaceUrl: fullPath,
@@ -36,7 +36,7 @@ function NavLinks({ onLinkClick }: { onLinkClick?: () => void }) {
         Beranda
       </Link>
       <Link href="/katalog?type=product" className={isKatalogActive ? 'active' : ''} onClick={onLinkClick}>
-        Katalog
+        Produk UMKM
       </Link>
       <Link href="/katalog?type=service" className={isLayananActive ? 'active' : ''} onClick={onLinkClick}>
         Layanan Jasa
@@ -133,7 +133,7 @@ export default function Navbar() {
             <Suspense fallback={
               <nav className="header-nav">
                 <Link href="/" className={pathname === '/' ? 'active' : ''}>Beranda</Link>
-                <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>Katalog</Link>
+                <Link href="/katalog?type=product" className={pathname.startsWith('/katalog') ? 'active' : ''}>Produk UMKM</Link>
                 <Link href="/katalog?type=service">Layanan Jasa</Link>
                 <Link href="/bisnis" className={pathname.startsWith('/bisnis') ? 'active' : ''}>Profil UMKM</Link>
               </nav>
