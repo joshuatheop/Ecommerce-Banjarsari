@@ -52,9 +52,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const NAV_ITEMS = [
     { href: '/admin', icon: <LayoutDashboard size={18} />, label: 'Dashboard' },
+    { href: '/admin/umkm', icon: <Store size={18} />, label: 'UMKM/Penyedia Jasa' },
     { href: '/admin/produk', icon: <Package size={18} />, label: 'Produk' },
     { href: '/admin/jasa', icon: <Wrench size={18} />, label: 'Jasa' },
-    { href: '/admin/umkm', icon: <Store size={18} />, label: 'UMKM/Penyedia Jasa' },
     { href: '/admin/kategori', icon: <Tag size={18} />, label: 'Kategori' },
     { href: '/admin/ulasan', icon: <MessageSquare size={18} />, label: 'Ulasan & Rating' },
     { href: '/admin/seo', icon: <Search size={18} />, label: 'SEO & Meta Tag' },

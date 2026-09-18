@@ -241,6 +241,7 @@ export default function AdminJasaPage() {
                   <th>Tipe Harga</th>
                   <th>Rentang Harga</th>
                   <th>Ketersediaan</th>
+                  <th>Total Klik</th>
                   <th>Status</th>
                   <th style={{ width: 80, textAlign: 'right' }}>Aksi</th>
                 </tr>
@@ -284,6 +285,11 @@ export default function AdminJasaPage() {
                       </span>
                     </td>
                     <td>{getAvailabilityLabel(j.availability_type)}</td>
+                    <td>
+                      <span className={styles.mono} style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                        🔥 {j.clickCount ?? 0}
+                      </span>
+                    </td>
                     <td>
                       <span className={j.is_active ? styles.tagKategori : styles.tagRange}>
                         {j.is_active ? 'Aktif' : 'Nonaktif'}

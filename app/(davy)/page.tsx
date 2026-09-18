@@ -65,10 +65,10 @@ export default async function Home() {
                 fontSize: "clamp(28px, 5vw, 56px)", margin: "0 0 20px", lineHeight: 1.15, letterSpacing: "-0.02em",
                 color: "var(--primary)"
               }}>
-                Apa lu mau, <span style={{ color: "var(--primary)", borderBottom: "3px solid var(--secondary)" }}>tetangga ada.</span>
+                Apa yang di mau, <span style={{ fontStyle: 'italic', color: "var(--primary)", borderBottom: "3px solid var(--secondary)" }}>disini ada.</span>
               </h1>
               <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "var(--dark)", opacity: 0.8, maxWidth: 540, lineHeight: 1.6, margin: "0 0 32px" }}>
-                Temukan {products.length + services.length} produk unggulan dan layanan jasa terpercaya dari {businesses.length} pelaku UMKM mandiri di lingkungan Kelurahan Banjarsari. Belanja dekat, hemat ongkir, majukan tetangga.
+                {products.length + services.length} produk & jasa dari {businesses.length} UMKM warga, semuanya berada di Desa Banjarsari. Belanja dari tetangga, hemat ongkir, kenal yang bikin.
               </p>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -107,19 +107,25 @@ export default async function Home() {
 
             {/* Hero Right Column: Full Image Cover + Floating Trending Card */}
             <div style={{ position: "relative", width: "100%" }}>
-              <div className="hero-showcase-card" style={{
-                borderRadius: "var(--radius-xl)",
-                overflow: "hidden",
-                background: "linear-gradient(135deg, #013020 0%, #05472B 60%, #032b1b 100%)",
-                position: "relative",
-                boxShadow: "0 24px 50px rgba(1, 48, 32, 0.22)",
-                minHeight: "clamp(380px, 48vh, 480px)",
-                aspectRatio: "4/5",
-                border: "1px solid rgba(255, 255, 255, 0.15)",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "space-between",
-              }}>
+              <Link
+                href={heroProduct ? `/produk/${heroProduct.product_id}` : '/katalog?type=product'}
+                className="hero-showcase-card"
+                style={{
+                  borderRadius: "var(--radius-xl)",
+                  overflow: "hidden",
+                  background: "linear-gradient(135deg, #013020 0%, #05472B 60%, #032b1b 100%)",
+                  position: "relative",
+                  boxShadow: "0 24px 50px rgba(1, 48, 32, 0.22)",
+                  minHeight: "clamp(380px, 48vh, 480px)",
+                  aspectRatio: "4/5",
+                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                }}
+              >
                 {/* Full Cover Product Image if available */}
                 {heroProduct?.thumbnail_url ? (
                   <Image
@@ -127,7 +133,8 @@ export default async function Home() {
                     alt={heroProduct.product_name}
                     fill
                     sizes="(max-width: 768px) 100vw, 500px"
-                    style={{ objectFit: "cover", zIndex: 1 }}
+                    className="hero-showcase-img"
+                    style={{ objectFit: "cover", zIndex: 1, transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)" }}
                     priority
                   />
                 ) : (
@@ -193,8 +200,7 @@ export default async function Home() {
 
                   {/* Floating Trending Card on the bottom-right (Sudut Kanan Card) */}
                   {heroProduct && (
-                    <Link
-                      href={`/produk/${heroProduct.product_id}`}
+                    <div
                       className="hero-floating-card"
                       style={{
                         background: "var(--surface)",
@@ -204,7 +210,6 @@ export default async function Home() {
                         border: "1px solid var(--line)",
                         minWidth: 210,
                         maxWidth: 240,
-                        textDecoration: "none",
                         transition: "transform 0.2s ease, box-shadow 0.2s ease",
                         display: "block",
                         marginLeft: "auto",
@@ -235,8 +240,9 @@ export default async function Home() {
                         }}>
                           Rp {heroProduct.product_price ? heroProduct.product_price.toLocaleString("id-ID") : "22.000"}
                         </span>
+                        {/* Hidden click count badge */}
                         <span style={{
-                          display: "inline-flex",
+                          display: "none",
                           alignItems: "center",
                           gap: 4,
                           fontSize: 12,
@@ -247,10 +253,10 @@ export default async function Home() {
                           🔥 {heroProduct.clickCount || heroProduct.like_count || 312} klik
                         </span>
                       </div>
-                    </Link>
+                    </div>
                   )}
                 </div>
-              </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -305,7 +311,7 @@ export default async function Home() {
         <div className="container">
           <div className="section-head">
             <div>
-              <h2>Produk Unggulan UMKM</h2>
+              <h2>Produk UMKM Desa</h2>
               <p>Mulai dari kuliner lezat hingga kerajinan seni tradisional karya warga Banjarsari.</p>
             </div>
             <Link href="/katalog?type=product" className="more">
@@ -350,10 +356,136 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* SECTION CTA: DAFTARKAN USAHA */}
+      <section style={{ background: "var(--white)", padding: "clamp(40px, 6vw, 72px) 0", borderTop: "1px solid var(--line)" }}>
+        <div className="container">
+          <div
+            className="cta-banner"
+            style={{
+              background: "linear-gradient(135deg, #013020 0%, #05472B 65%, #022316 100%)",
+              borderRadius: "var(--radius-xl)",
+              padding: "clamp(36px, 5vw, 48px) clamp(28px, 5vw, 56px)",
+              position: "relative",
+              overflow: "hidden",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 32,
+              boxShadow: "0 20px 48px rgba(1, 48, 32, 0.2)",
+              border: "1px solid rgba(170, 220, 171, 0.18)",
+            }}
+          >
+            {/* Background Texture & Decorative Glow */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "repeating-linear-gradient(135deg, transparent 0 28px, rgba(255, 252, 244, 0.025) 28px 56px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: -40,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 360,
+                height: 360,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(170, 220, 171, 0.14) 0%, rgba(5, 71, 43, 0) 70%)",
+                pointerEvents: "none",
+              }}
+            />
+
+            {/* Left Content */}
+            <div style={{ position: "relative", zIndex: 1, maxWidth: 640 }}>
+              <div
+                className="label-eyebrow"
+                style={{
+                  color: "var(--secondary)",
+                  marginBottom: 12,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                UNTUK PEMILIK USAHA
+              </div>
+              <h2
+                className="display"
+                style={{
+                  fontSize: "clamp(24px, 3.5vw, 36px)",
+                  fontWeight: 700,
+                  color: "var(--white)",
+                  margin: "0 0 14px",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                Punya usaha di Banjarsari?{" "}
+                <span style={{ color: "var(--secondary)", fontStyle: "italic", borderBottom: "2px solid var(--secondary)" }}>
+                  Daftarkan gratis.
+                </span>
+              </h2>
+              <p
+                style={{
+                  color: "rgba(255, 252, 244, 0.85)",
+                  fontSize: "clamp(14px, 1.8vw, 16px)",
+                  lineHeight: 1.65,
+                  margin: 0,
+                  fontFamily: "var(--font-ui)",
+                }}
+              >
+                Tim Karang Taruna akan membantu fotokan produk, mengisi deskripsi, dan menandai lokasi di peta katalog.
+              </p>
+            </div>
+
+            {/* Right CTA Button */}
+            <div style={{ position: "relative", zIndex: 1, flexShrink: 0 }}>
+              <a
+                href="https://wa.me/628123456789?text=Halo%20Karang%20Taruna%20Banjarsari,%20saya%20pemilik%20usaha%20di%20Banjarsari%20dan%20ingin%20mendaftarkan%20usaha/produk/jasa%20saya%20ke%20katalog."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="cta-wa-btn btn-lg"
+                style={{
+                  background: "var(--secondary)",
+                  color: "var(--dark)",
+                  padding: "14px 28px",
+                  borderRadius: 999,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                  textDecoration: "none",
+                  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
+                  whiteSpace: "nowrap",
+                  fontFamily: "var(--font-ui)",
+                }}
+              >
+                <Icons.Whatsapp /> Daftar via WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <style>{`
-        .hero-floating-card:hover {
+        .hero-showcase-card:hover .hero-showcase-img {
+          transform: scale(1.04);
+        }
+        .hero-showcase-card:hover .hero-floating-card {
           transform: translateY(-4px);
           box-shadow: 0 20px 42px rgba(0, 0, 0, 0.35) !important;
+        }
+        .cta-wa-btn:hover {
+          background: var(--white) !important;
+          color: var(--primary) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3) !important;
         }
         @media (max-width: 880px) {
           .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
@@ -386,6 +518,15 @@ export default async function Home() {
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
+          }
+          .cta-banner {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 20px !important;
+          }
+          .cta-wa-btn {
+            width: 100% !important;
+            text-align: center !important;
           }
         }
       `}</style>

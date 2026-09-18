@@ -35,6 +35,8 @@ function toProdukItem(id: string, data: Record<string, unknown>): ProdukItem {
     media_sosial:       (data.media_sosial as string) ?? null,
     thumbnail_url:      (data.thumbnail_url as string) ?? null,
     is_active:          (data.is_active as boolean) ?? true,
+    like_count:         typeof data.like_count === 'number' ? data.like_count : (data.favorite_count as number) || 0,
+    clickCount:         typeof data.clickCount === 'number' ? data.clickCount : 0,
     createdAt:          data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     updatedAt:          data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
     deletedAt:          data.deletedAt instanceof Timestamp ? data.deletedAt.toDate() : null,

@@ -3,7 +3,6 @@
 import React, { useMemo } from 'react';
 import type { ProdukItem, ServiceItem, Business } from '@/lib/firestore/types';
 import RankRow from './RankRow';
-import { useFavorites } from '@/context/FavoritesContext';
 
 interface MostFavoriteSectionProps {
   products: ProdukItem[];
@@ -18,8 +17,6 @@ export default function MostFavoriteSection({
   businesses,
   businessMap,
 }: MostFavoriteSectionProps) {
-  const { getLikes } = useFavorites();
-
   const bMap = useMemo(() => {
     if (businessMap) return businessMap;
     const map: Record<string, string> = {};
@@ -31,35 +28,29 @@ export default function MostFavoriteSection({
 
   const getBusinessName = (id: string) => bMap[id] || 'UMKM Banjarsari';
 
-  // Dynamic ranking for products sorted by real-time love count
+  // Dynamic ranking for products sorted by clickCount
   const topProducts = useMemo(() => {
     return [...products]
       .sort((a, b) => {
-        const likesA = getLikes(a.product_id, a.like_count ?? 0);
-        const likesB = getLikes(b.product_id, b.like_count ?? 0);
-        if (likesB !== likesA) return likesB - likesA;
         const clicksA = a.clickCount ?? 0;
         const clicksB = b.clickCount ?? 0;
         if (clicksB !== clicksA) return clicksB - clicksA;
         return a.product_name.localeCompare(b.product_name);
       })
       .slice(0, 4);
-  }, [products, getLikes]);
+  }, [products]);
 
-  // Dynamic ranking for services sorted by real-time love count
+  // Dynamic ranking for services sorted by clickCount
   const topServices = useMemo(() => {
     return [...services]
       .sort((a, b) => {
-        const likesA = getLikes(a.service_id, a.like_count ?? 0);
-        const likesB = getLikes(b.service_id, b.like_count ?? 0);
-        if (likesB !== likesA) return likesB - likesA;
         const clicksA = a.clickCount ?? 0;
         const clicksB = b.clickCount ?? 0;
         if (clicksB !== clicksA) return clicksB - clicksA;
         return a.service_name.localeCompare(b.service_name);
       })
       .slice(0, 4);
-  }, [services, getLikes]);
+  }, [services]);
 
   return (
     <section className="section fl-fav-section">
@@ -67,19 +58,19 @@ export default function MostFavoriteSection({
         <div className="section-head">
           <div>
             <h2 style={{ fontSize: 'clamp(24px, 3.5vw, 32px)', fontWeight: 800, margin: 0, color: 'var(--primary)' }}>
-              Most Favorite Produk &amp; Jasa
+              Produk Unggulan Banjarsari
             </h2>
             <p style={{ margin: '6px 0 0', color: 'var(--dark)', opacity: 0.75, fontSize: 15 }}>
-              Produk dan layanan jasa yang paling banyak disukai oleh warga Banjarsari.
+              Produk dan layanan jasa pilihan paling diminati dan paling banyak dilihat oleh warga Banjarsari.
             </p>
           </div>
         </div>
 
         <div className="fl-fav-grid">
-          {/* Column 1: Product Rankings (Most Favorite) */}
+          {/* Column 1: Product Rankings (Produk Unggulan) */}
           <div className="fl-fav-col">
             <div className="fl-fav-col-header product" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>❤️</span> Most Favorite · Produk
+              <span>🔥</span> Produk Unggulan
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {Array.from({ length: 4 }).map((_, index) => {
@@ -123,10 +114,10 @@ export default function MostFavoriteSection({
             </div>
           </div>
 
-          {/* Column 2: Service Rankings (Most Favorite) */}
+          {/* Column 2: Service Rankings (Layanan Jasa Unggulan) */}
           <div className="fl-fav-col">
             <div className="fl-fav-col-header service" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>❤️</span> Most Favorite · Jasa
+              <span>⚡</span> Layanan Jasa Unggulan
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {Array.from({ length: 4 }).map((_, index) => {

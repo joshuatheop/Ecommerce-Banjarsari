@@ -9,6 +9,7 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
+  limit,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { ReviewItem } from './types';
@@ -76,9 +77,54 @@ export async function deleteReview(reviewId: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTION, reviewId));
 }
 
+export async function getUserReview(
+  itemId: string,
+  itemType: 'product' | 'service',
+  userId: string
+): Promise<ReviewItem | null> {
+  const q = query(
+    collection(db, COLLECTION),
+    where('item_id', '==', itemId),
+    where('item_type', '==', itemType),
+    where('user_id', '==', userId),
+    limit(1)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return toReviewItem(d.id, d.data() as Record<string, unknown>);
+}
+
+export async function hasUserReviewed(
+  itemId: string,
+  itemType: 'product' | 'service',
+  userId: string
+): Promise<boolean> {
+  const result = await getUserReview(itemId, itemType, userId);
+  return result !== null;
+}
+
+export async function updateReview(
+  reviewId: string,
+  updates: { rating: number; comment: string }
+): Promise<void> {
+  const { updateDoc } = await import('firebase/firestore');
+  await updateDoc(doc(db, COLLECTION, reviewId), {
+    rating: updates.rating,
+    comment: updates.comment,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function addReview(
   payload: Omit<ReviewItem, 'review_id' | 'createdAt'>
 ): Promise<string> {
+  // Enforce 1 review per user per item
+  const existing = await getUserReview(payload.item_id, payload.item_type, payload.user_id);
+  if (existing) {
+    throw new Error('Anda sudah memberikan ulasan untuk produk/jasa ini.');
+  }
+
   const cleanData = {
     item_id: payload.item_id || '',
     item_type: payload.item_type || 'product',

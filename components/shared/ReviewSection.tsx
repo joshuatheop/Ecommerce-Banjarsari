@@ -5,7 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import type { ReviewItem } from '@/lib/firestore/types';
-import { getReviews, addReview, calculateAverageRating } from '@/lib/firestore/reviews';
+import {
+  getReviews,
+  addReview,
+  updateReview,
+  getUserReview,
+  calculateAverageRating,
+} from '@/lib/firestore/reviews';
 
 interface ReviewSectionProps {
   itemId: string;
@@ -20,7 +26,6 @@ const StarRating = ({ rating, size = 18, interactive = false, onRatingChange }: 
   onRatingChange?: (r: number) => void;
 }) => {
   const [hoverRating, setHoverRating] = useState<number | null>(null);
-
   const displayRating = hoverRating !== null ? hoverRating : rating;
 
   return (
@@ -62,6 +67,12 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // The current user's existing review (if any)
+  const [myReview, setMyReview] = useState<ReviewItem | null>(null);
+
+  // Edit mode: true = actively editing (form is open), false = showing existing review read-only
+  const [isEditing, setIsEditing] = useState(false);
+
   // Form states
   const [ratingInput, setRatingInput] = useState<number>(5);
   const [commentInput, setCommentInput] = useState('');
@@ -81,9 +92,30 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
     fetchReviewsData();
   }, [fetchReviewsData]);
 
+  // Fetch current user's review whenever user or reviews change
+  useEffect(() => {
+    if (!user || !itemId) {
+      setMyReview(null);
+      setIsEditing(false);
+      return;
+    }
+    getUserReview(itemId, itemType, user.uid).then((existing) => {
+      setMyReview(existing);
+      if (existing) {
+        // Pre-fill form with existing values (ready if they open edit)
+        setRatingInput(existing.rating);
+        setCommentInput(existing.comment);
+        setIsEditing(false); // start in read mode
+      } else {
+        setRatingInput(5);
+        setCommentInput('');
+      }
+    });
+  }, [user, itemId, itemType, reviews]);
+
   const { average, count } = calculateAverageRating(reviews);
 
-  const handleSubmitReview = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -92,7 +124,6 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
       setErrorMsg('Anda harus masuk terlebih dahulu untuk mengirim ulasan.');
       return;
     }
-
     if (!commentInput.trim()) {
       setErrorMsg('Silakan tulis komentar atau masukan Anda.');
       return;
@@ -103,27 +134,47 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
       const userName = user.displayName || user.email?.split('@')[0] || 'Pengguna';
       const userPhoto = user.photoURL || null;
 
-      await addReview({
-        item_id: itemId,
-        item_type: itemType,
-        user_id: user.uid,
-        user_name: userName,
-        user_photo: userPhoto,
-        rating: ratingInput,
-        comment: commentInput.trim(),
-      });
+      if (myReview) {
+        // UPDATE existing review
+        await updateReview(myReview.review_id, {
+          rating: ratingInput,
+          comment: commentInput.trim(),
+        });
+        setSuccessMsg('Ulasan Anda berhasil diperbarui!');
+      } else {
+        // ADD new review
+        await addReview({
+          item_id: itemId,
+          item_type: itemType,
+          user_id: user.uid,
+          user_name: userName,
+          user_photo: userPhoto,
+          rating: ratingInput,
+          comment: commentInput.trim(),
+        });
+        setSuccessMsg('Terima kasih! Ulasan dan rating Anda berhasil dikirim.');
+      }
 
-      setSuccessMsg('Terima kasih! Ulasan dan rating Anda berhasil dikirim.');
-      setCommentInput('');
-      setRatingInput(5);
+      setIsEditing(false);
       await fetchReviewsData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ReviewSection] Submit error:', err);
-      const detailMsg = err?.message ? `: ${err.message}` : '.';
+      const detailMsg = err instanceof Error && err.message ? `: ${err.message}` : '.';
       setErrorMsg(`Gagal mengirim ulasan${detailMsg}`);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form back to the saved values
+    if (myReview) {
+      setRatingInput(myReview.rating);
+      setCommentInput(myReview.comment);
+    }
+    setErrorMsg('');
+    setSuccessMsg('');
+    setIsEditing(false);
   };
 
   return (
@@ -132,7 +183,7 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, borderBottom: '2px solid #111', paddingBottom: 12 }}>
         <div>
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, textTransform: 'uppercase', color: '#111', margin: 0 }}>
-            Ulasan & Rating Pembeli
+            Ulasan &amp; Rating Pembeli
           </h3>
           {itemName && <div style={{ fontSize: 12.5, color: '#666', marginTop: 2 }}>{itemName}</div>}
         </div>
@@ -168,24 +219,28 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
             const initial = rev.user_name ? rev.user_name.charAt(0).toUpperCase() : 'U';
             const dateStr = rev.createdAt
               ? new Date(rev.createdAt).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              })
               : '';
+            const isOwnReview = user?.uid === rev.user_id;
 
             return (
               <div
                 key={rev.review_id}
                 style={{
-                  background: '#fff',
-                  border: '1px solid #E5E5E5',
+                  background: isOwnReview ? 'rgba(1, 48, 32, 0.03)' : '#fff',
+                  border: isOwnReview ? '1.5px solid var(--primary)' : '1px solid #E5E5E5',
                   padding: 16,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 8,
+                  borderRadius: 4,
+                  position: 'relative',
                 }}
               >
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     {/* User Avatar */}
@@ -228,94 +283,200 @@ export default function ReviewSection({ itemId, itemType, itemName }: ReviewSect
                 <p style={{ margin: 0, fontSize: 14, color: '#333', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
                   {rev.comment}
                 </p>
+
+                {/* Edit button — only on own review, in read mode */}
+                {isOwnReview && !isEditing && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setErrorMsg('');
+                        setSuccessMsg('');
+                      }}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--primary)',
+                        color: 'var(--primary)',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        padding: '5px 14px',
+                        borderRadius: 99,
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        fontFamily: 'var(--font-ui)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      ✏️ Edit Ulasan
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Auth-gated Review Submission Form */}
+      {/* Review Form Area */}
       <div style={{ background: '#fff', border: '1.5px solid #111', padding: 20, marginTop: 8 }}>
         {user ? (
-          /* User is LOGGED IN: Show form */
-          <form onSubmit={handleSubmitReview} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#111' }}>
-              Tulis Ulasan & Rating Anda
+          myReview && !isEditing ? (
+            /* User has reviewed and is NOT in edit mode — show compact "already reviewed" footer */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#555', fontSize: 13 }}>
+              <span style={{ fontSize: 18 }}>✅</span>
+              <span>
+                Anda sudah memberikan ulasan untuk {itemType === 'product' ? 'produk' : 'jasa'} ini.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(true);
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    padding: 0,
+                    fontSize: 13,
+                    fontFamily: 'var(--font-ui)',
+                  }}
+                >
+                  Ubah ulasan
+                </button>
+              </span>
             </div>
-
-            {errorMsg && (
-              <div style={{ background: '#FFF5F5', color: '#C0392B', padding: '10px 14px', border: '1px solid #FEB2B2', fontSize: 13, borderRadius: 4 }}>
-                {errorMsg}
+          ) : (
+            /* Write / Edit form */
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontWeight: 800, fontSize: 15, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#111' }}>
+                  {myReview ? 'Edit Ulasan Saya' : 'Tulis Ulasan & Rating Anda'}
+                </div>
+                {myReview && (
+                  <div style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    color: 'var(--primary)',
+                    background: 'rgba(1, 48, 32, 0.08)',
+                    padding: '3px 10px',
+                    borderRadius: 99,
+                  }}>
+                    Mode Edit
+                  </div>
+                )}
               </div>
-            )}
 
-            {successMsg && (
-              <div style={{ background: '#F0FDF4', color: '#15803D', padding: '10px 14px', border: '1px solid #86EFAC', fontSize: 13, borderRadius: 4 }}>
-                {successMsg}
+              {errorMsg && (
+                <div style={{ background: '#FFF5F5', color: '#C0392B', padding: '10px 14px', border: '1px solid #FEB2B2', fontSize: 13, borderRadius: 4 }}>
+                  {errorMsg}
+                </div>
+              )}
+
+              {successMsg && (
+                <div style={{ background: '#F0FDF4', color: '#15803D', padding: '10px 14px', border: '1px solid #86EFAC', fontSize: 13, borderRadius: 4 }}>
+                  {successMsg}
+                </div>
+              )}
+
+              {/* Rating Star Picker */}
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 700, color: '#444', display: 'block', marginBottom: 6 }}>
+                  Pilih Rating (1-5 Bintang):
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <StarRating rating={ratingInput} size={26} interactive onRatingChange={setRatingInput} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
+                    {ratingInput} / 5 Bintang
+                  </span>
+                </div>
               </div>
-            )}
 
-            {/* Rating Star Picker */}
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 700, color: '#444', display: 'block', marginBottom: 6 }}>
-                Pilih Rating (1-5 Bintang):
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <StarRating rating={ratingInput} size={26} interactive onRatingChange={setRatingInput} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
-                  {ratingInput} / 5 Bintang
-                </span>
+              {/* Comment Textarea */}
+              <div>
+                <label htmlFor="review-comment" style={{ fontSize: 13, fontWeight: 700, color: '#444', display: 'block', marginBottom: 6 }}>
+                  Komentar &amp; Ulasan:
+                </label>
+                <textarea
+                  id="review-comment"
+                  rows={3}
+                  placeholder="Bagikan pengalaman Anda menggunakan produk/jasa ini..."
+                  value={commentInput}
+                  onChange={(e) => setCommentInput(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '1.5px solid #CCC',
+                    borderRadius: 0,
+                    fontSize: 14,
+                    fontFamily: 'var(--font-ui)',
+                    outline: 'none',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                />
               </div>
-            </div>
 
-            {/* Comment Textarea */}
-            <div>
-              <label htmlFor="review-comment" style={{ fontSize: 13, fontWeight: 700, color: '#444', display: 'block', marginBottom: 6 }}>
-                Komentar & Ulasan:
-              </label>
-              <textarea
-                id="review-comment"
-                rows={3}
-                placeholder="Bagikan pengalaman Anda menggunakan produk/jasa ini..."
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1.5px solid #CCC',
-                  borderRadius: 0,
-                  fontSize: 14,
-                  fontFamily: 'var(--font-ui)',
-                  outline: 'none',
-                  resize: 'vertical',
-                }}
-              />
-            </div>
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="btn btn-primary"
+                  style={{
+                    borderRadius: 0,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    fontSize: 13,
+                    padding: '10px 24px',
+                    opacity: submitting ? 0.7 : 1,
+                  }}
+                >
+                  {submitting
+                    ? (myReview ? 'Menyimpan...' : 'Mengirim...')
+                    : (myReview ? 'Perbarui Ulasan' : 'Kirim Ulasan')}
+                </button>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn btn-primary"
-              style={{
-                alignSelf: 'flex-start',
-                borderRadius: 0,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                fontSize: 13,
-                padding: '10px 24px',
-                opacity: submitting ? 0.7 : 1,
-              }}
-            >
-              {submitting ? 'Mengirim...' : 'Kirim Ulasan'}
-            </button>
-          </form>
+                {/* Cancel button — only shown in edit mode */}
+                {myReview && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={submitting}
+                    style={{
+                      background: 'none',
+                      border: '1.5px solid #CCC',
+                      color: '#555',
+                      fontWeight: 700,
+                      fontSize: 13,
+                      padding: '10px 20px',
+                      cursor: 'pointer',
+                      textTransform: 'uppercase',
+                      fontFamily: 'var(--font-ui)',
+                    }}
+                  >
+                    Batalkan
+                  </button>
+                )}
+              </div>
+            </form>
+          )
         ) : (
           /* User is NOT LOGGED IN: Show login required notice */
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontWeight: 800, fontSize: 15, color: '#111', textTransform: 'uppercase' }}>
-                Ingin Memberikan Rating & Ulasan?
+                Ingin Memberikan Rating &amp; Ulasan?
               </div>
               <div style={{ fontSize: 13, color: '#666', marginTop: 2 }}>
                 Fitur rating dan komentar dikhususkan untuk pengguna yang sudah masuk (login).

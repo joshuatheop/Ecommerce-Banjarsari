@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { updateProfile } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, storage } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import { getUserDocument, updateUserDocument } from '@/lib/auth';
+import { compressToWebPBase64, estimateBase64SizeKB } from '@/lib/imageUtils';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -21,12 +21,10 @@ export default function ProfilePage() {
   const [photoURL, setPhotoURL] = useState('');
   const [imageError, setImageError] = useState(false);
   
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [filePreview, setFilePreview] = useState<string>('');
-  
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [pending, setPending] = useState(false);
+  const [compressing, setCompressing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +32,7 @@ export default function ProfilePage() {
   // Reset image error on profile data load
   useEffect(() => {
     setImageError(false);
-  }, [photoURL, filePreview]);
+  }, [photoURL]);
 
   // Guard: Redirect if not logged in
   useEffect(() => {
@@ -78,27 +76,30 @@ export default function ProfilePage() {
     fileInputRef.current?.click();
   };
 
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection — instantly compress to WebP Base64 string
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError('');
     const file = e.target.files?.[0];
     
     if (file) {
-      // Validasi ukuran berkas (Max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setError('Ukuran gambar maksimal adalah 2MB.');
-        return;
-      }
-
-      // Validasi tipe berkas
       if (!file.type.startsWith('image/')) {
         setError('Hanya berkas gambar yang diperbolehkan.');
         return;
       }
 
-      setSelectedFile(file);
-      const previewUrl = URL.createObjectURL(file);
-      setFilePreview(previewUrl);
+      try {
+        setCompressing(true);
+        // Kompresi client-side ke WebP (maks 400x400, kualitas 70% ~ 15-30 KB)
+        const base64WebP = await compressToWebPBase64(file, 400, 0.7);
+        setPhotoURL(base64WebP);
+        setImageError(false);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Gagal memproses gambar profil.';
+        setError(msg);
+      } finally {
+        setCompressing(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -125,49 +126,33 @@ export default function ProfilePage() {
     }
 
     try {
-      let finalPhotoUrl = photoURL;
-
-      // 1. Upload file if selected
-      if (selectedFile) {
-        const storageRef = ref(storage, `users/${auth.currentUser.uid}/profile_picture`);
-        const snapshot = await uploadBytes(storageRef, selectedFile);
-        finalPhotoUrl = await getDownloadURL(snapshot.ref);
-      }
-
-      // 2. Update Firebase Auth Profile
-      await updateProfile(auth.currentUser, {
-        displayName: displayName || null,
-        photoURL: finalPhotoUrl || null,
-      });
-
-      // 3. Update Firestore Document
+      // 1. Simpan langsung ke Firestore dokumen users/{uid} sebagai teks Base64 WebP (tanpa Storage)
       await updateUserDocument(auth.currentUser.uid, {
         displayName,
-        photoURL: finalPhotoUrl,
+        photoURL,
         alamat,
         kewarganegaraan,
         noTelepon,
       });
 
-      setPhotoURL(finalPhotoUrl);
-      setSelectedFile(null);
+      // 2. Sinkronkan ke Firebase Auth Profile jika URL bukan Base64 panjang (misal URL Google), atau displayName
+      try {
+        await updateProfile(auth.currentUser, {
+          displayName: displayName || null,
+          photoURL: photoURL.startsWith('http') ? photoURL : null,
+        });
+      } catch (authErr) {
+        console.warn('[ProfilePage] Auth sync notice:', authErr);
+      }
+
       setSuccess('Profil Anda berhasil diperbarui.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating profile:', err);
       setError('Gagal memperbarui profil. Silakan coba lagi.');
     } finally {
       setPending(false);
     }
   };
-
-  // Clean up Object URL
-  useEffect(() => {
-    return () => {
-      if (filePreview) {
-        URL.revokeObjectURL(filePreview);
-      }
-    };
-  }, [filePreview]);
 
   if (loading || initialLoading) {
     return (
@@ -211,10 +196,10 @@ export default function ProfilePage() {
                 aria-label="Ubah foto profil"
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAvatarClick(); }}
               >
-                {(filePreview || photoURL) && !imageError ? (
+                {photoURL && !imageError ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img 
-                    src={filePreview || photoURL} 
+                    src={photoURL} 
                     alt="Foto Profil" 
                     className={styles.avatar} 
                     onError={() => setImageError(true)}
@@ -234,7 +219,9 @@ export default function ProfilePage() {
                 className={styles.fileInput}
                 aria-hidden="true"
               />
-              <span className={styles.avatarTip}>Ukuran gambar maks. 2MB</span>
+              <span className={styles.avatarTip}>
+                {compressing ? 'Memproses WebP...' : 'Ukuran gambar otomatis dioptimalkan'}
+              </span>
             </div>
 
             <button 
