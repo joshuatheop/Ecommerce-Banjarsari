@@ -442,20 +442,22 @@ const CatalogContainer = ({
             ) : (
               <div className="fl-grid">
                 {type === 'product'
-                  ? filteredProducts.map((p) => (
+                  ? filteredProducts.map((p, index) => (
                       <ProductCard
                         key={p.product_id}
                         product={p}
                         businessName={getBusinessName(p.business_id)}
                         categoryName={categoryMap.get(p.category_id)}
+                        isPopular={index < 4}
                       />
                     ))
-                  : filteredServices.map((s) => (
+                  : filteredServices.map((s, index) => (
                       <ServiceCard
                         key={s.service_id}
                         service={s}
                         businessName={getBusinessName(s.business_id)}
                         categoryName={categoryMap.get(s.category_id)}
+                        isPopular={index < 4}
                       />
                     ))}
               </div>

@@ -27,9 +27,27 @@ export default async function Home() {
   const businessMap = new Map(businesses.map((b) => [b.business_id, b.business_name]));
   const getBusinessName = (id: string) => businessMap.get(id) || "UMKM Banjarsari";
 
-  // Featured items (default first items)
-  const featuredProducts = products.slice(0, 4);
-  const featuredServices = services.slice(0, 4);
+  // Top 4 product/service IDs berdasarkan clickCount (untuk badge TERPOPULER yang konsisten)
+  const top4ProductIds = new Set(
+    [...products]
+      .sort((a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0))
+      .slice(0, 4)
+      .map((p) => p.product_id)
+  );
+  const top4ServiceIds = new Set(
+    [...services]
+      .sort((a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0))
+      .slice(0, 4)
+      .map((s) => s.service_id)
+  );
+
+  // Featured items: urut A-Z by name (beda dari section produk unggulan yang urut by popularitas)
+  const featuredProducts = [...products]
+    .sort((a, b) => a.product_name.localeCompare(b.product_name))
+    .slice(0, 4);
+  const featuredServices = [...services]
+    .sort((a, b) => a.service_name.localeCompare(b.service_name))
+    .slice(0, 4);
 
   // Hero showcase item: produk dengan klik terbanyak (most clicked product)
   const heroProduct = [...products].sort((a, b) => {
@@ -325,6 +343,7 @@ export default async function Home() {
                 key={product.product_id}
                 product={product}
                 businessName={getBusinessName(product.business_id)}
+                isPopular={top4ProductIds.has(product.product_id)}
               />
             ))}
           </div>
@@ -350,6 +369,7 @@ export default async function Home() {
                 key={service.service_id}
                 service={service}
                 businessName={getBusinessName(service.business_id)}
+                isPopular={top4ServiceIds.has(service.service_id)}
               />
             ))}
           </div>
